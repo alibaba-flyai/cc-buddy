@@ -43,6 +43,31 @@ In a fresh Claude Code CLI session, inside a project that does not already have 
   https://axios-http.com
 ```
 
+## How It Works
+
+```text
+Claude runs a tool
+       │
+  PreToolUse hook
+  checks exemption list
+       │
+  ┌────┴─────┐
+  │          │
+exempt    everything else
+  │          │
+exit 0     call LLM
+(skip)         │
+           ┌───┴────┐
+           │        │
+        trivial   explanation
+        (empty)     │
+           │     warning card
+        exit 0      │
+        (skip)   exit 0 (allow)
+```
+
+Once a `(tool, operation)` pair has been explained in a session, cc-teacher exits 0 on subsequent runs and does not interrupt again.
+
 ## Uninstall
 
 ```text
