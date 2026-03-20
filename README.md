@@ -20,15 +20,13 @@ Obvious operations like `ls`, `cat`, and `git status` are skipped without an LLM
 
 ## Installation
 
-In Claude Code:
+In Claude Code CLI:
 
 ```text
 /plugin marketplace add alibaba-flyai/cc-teacher
 /plugin install cc-teacher@flyai
 /reload-plugins
 ```
-
-Or open `/plugin` and install it from the marketplace UI.
 
 ## Examples
 

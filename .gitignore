@@ -2,3 +2,4 @@ knowledge/__pycache__/
 *.pyc
 __pycache__/
 .claude/settings.local.json
+.claude/settings.json
