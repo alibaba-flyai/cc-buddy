@@ -27,7 +27,7 @@ sys.path.insert(0, _PLUGIN_ROOT)
 from knowledge.classifier import classify_bash, classify_code
 
 LLM_API_URL = "https://api.vivgrid.com/v1/chat/completions"
-LLM_MODEL   = "gpt-5.4-nano"
+LLM_MODEL   = "gpt-5.4-mini"
 LLM_TIMEOUT = 30  # seconds
 ACCENT = "\033[38;2;217;121;89m"
 RESET = "\033[0m"
