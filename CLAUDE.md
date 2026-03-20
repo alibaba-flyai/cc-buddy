@@ -36,7 +36,7 @@ echo '{"session_id":"dev","tool_name":"Bash","tool_input":{"command":"npm instal
   | python3 hooks-handlers/pre-tool-use.py
 
 # Verify no plaintext key in source
-grep -r "fai-2" . --include="*.py" --include="*.sh"
+grep -r "viv-ccteacher-" . --include="*.py" --include="*.sh"
 ```
 
 ## Verification
@@ -46,7 +46,7 @@ grep -r "fai-2" . --include="*.py" --include="*.sh"
 | Syntax check | `python3 -m py_compile hooks-handlers/pre-tool-use.py knowledge/classifier.py` | No output |
 | Classifier change | `python3 -c "from knowledge.classifier import classify_bash, classify_code"` | No import error |
 | Hook change | `echo '{"session_id":"x","tool_name":"Bash","tool_input":{"command":"ls"}}' \| python3 hooks-handlers/pre-tool-use.py; echo $?` | exit 0 |
-| Key not leaked | `grep -r "fai-2" . --include="*.py" --include="*.sh"` | No matches |
+| Key not leaked | `grep -r "viv-ccteacher-" . --include="*.py" --include="*.sh"` | No matches |
 
 ## File map
 

@@ -26,13 +26,13 @@ sys.path.insert(0, _PLUGIN_ROOT)
 
 from knowledge.classifier import classify_bash, classify_code
 
-LLM_API_URL = "https://trip-llm.alibaba-inc.com/api/fai/v1/chat/completions"
-LLM_MODEL   = "kimi-k2.5"
+LLM_API_URL = "https://api.vivgrid.com/v1/chat/completions"
+LLM_MODEL   = "gpt-5.4-nano"
 LLM_TIMEOUT = 30  # seconds
 ACCENT = "\033[38;2;217;121;89m"
 RESET = "\033[0m"
 
-_FALLBACK = base64.b64decode("ZmFpLTItMTMtZWQ4MWVmNjRiNzc5").decode()
+_FALLBACK = base64.b64decode("***REDACTED_B64***").decode()
 
 
 # ---------------------------------------------------------------------------
@@ -102,9 +102,10 @@ def _save_state(session_id: str, keys: set):
 # ---------------------------------------------------------------------------
 
 def _get_api_key() -> str:
-    # Priority: environment variable > ~/.claude/cc_teacher.conf
-    key = os.environ.get("CC_TEACHER_API_KEY", "")
-    if key:
+    # Priority: environment variable > ~/.claude/cc_teacher.conf > fallback
+    # Ignore legacy internal keys so existing installs migrate cleanly.
+    key = os.environ.get("CC_TEACHER_API_KEY", "").strip()
+    if key and not key.startswith("fai-2"):
         return key
 
     conf = os.path.expanduser("~/.claude/cc_teacher.conf")
@@ -115,7 +116,7 @@ def _get_api_key() -> str:
                     line = line.strip()
                     if line.startswith("CC_TEACHER_API_KEY="):
                         key = line.split("=", 1)[1].strip()
-                        if key:
+                        if key and not key.startswith("fai-2"):
                             return key
         except IOError:
             pass

@@ -30,22 +30,18 @@ In Claude Code CLI:
 
 ## Examples
 
-Claude runs `npx prisma migrate dev`:
+In Claude Code CLI:
 
 ```text
-☻ Compares schema.prisma against the current database state, generates and runs a migration,
-  and updates Prisma Client types. Use prisma migrate deploy in production.
-  https://www.prisma.io/docs/orm/prisma-migrate
+帮我安装一个好用的请求库
 ```
 
-Claude edits a `.tsx` file containing `use client`:
+If Claude chooses `axios`, `cc-teacher` may show:
 
 ```text
-☻ 这是一个 Next.js 客户端组件，会在浏览器中执行，适合处理状态和交互，数据获取和敏感
-  逻辑应保留在 Server Component 或 Route Handler 中
+☻ 安装 axios，一个基于 Promise 的 HTTP 客户端，用于浏览器和 Node.js 发起网络请求
+  https://axios-http.com
 ```
-
-`cc-teacher` warns, it does not block.
 
 ## Uninstall
 
