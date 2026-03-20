@@ -1,0 +1,4 @@
+{
+  "name": "cc-teacher",
+  "description": "Explains unfamiliar operations before Claude Code executes them. Plain-language cards for shell commands and file edits, one explanation per session."
+}

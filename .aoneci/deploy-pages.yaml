@@ -1,0 +1,14 @@
+name: deploy-pages
+
+triggers:
+  push:
+
+jobs:
+  deploy:
+    image: alios-8u
+    steps:
+      - uses: checkout
+      - uses: deploy-pages
+        inputs:
+          deploy-dir: .
+          production-branch: main

@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash|Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ -f \"${CLAUDE_PLUGIN_ROOT}/hooks-handlers/pre-tool-use.py\" ] && python3 \"${CLAUDE_PLUGIN_ROOT}/hooks-handlers/pre-tool-use.py\" || true",
+            "timeout": 35
+          }
+        ]
+      }
+    ]
+  }
+}
