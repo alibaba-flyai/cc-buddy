@@ -19,7 +19,7 @@ an LLM call; everything else is handled by the LLM.
 
 ### NEVER
 - Hardcode API keys in source files
-- Modify `~/.claude/settings.json` directly -- only `install.sh` does that
+- Modify Claude Code plugin installation state manually when plugin commands or `--plugin-dir` can be used
 
 ### ALWAYS
 - Verify exemption changes with: `python3 -c "from knowledge.classifier import classify_bash; print(classify_bash('YOUR_COMMAND'))"`
@@ -55,5 +55,5 @@ grep -r "fai-2" . --include="*.py" --include="*.sh"
 | `knowledge/classifier.py` | Exemption list only -- add patterns here to silence over-eager LLM explanations |
 | `hooks-handlers/pre-tool-use.py` | Hook runtime: classify, call LLM, emit warning, allow |
 | `hooks/hooks.json` | Hook handler declarations (uses CLAUDE_PLUGIN_ROOT, not relied on for local installs) |
-| `install.sh` | Registers hooks with absolute paths in `~/.claude/settings.json` |
-| `uninstall.sh` | Removes hooks from `~/.claude/settings.json` |
+| `.claude-plugin/plugin.json` | Plugin manifest consumed by Claude Code |
+| `.claude-plugin/marketplace.json` | Marketplace manifest for GitHub distribution |

@@ -1,12 +1,6 @@
-<div align="center">
-  <img src="https://gw.alipayobjects.com/zos/k/2n/centaur.svg" width="106" alt="cc-teacher" />
-  <h1>cc-teacher</h1>
-  <p><em>Explains unfamiliar operations before Claude Code executes them.</em></p>
-</div>
+# cc-teacher
 
-<div align="center">
-  <img src="https://gw.alipayobjects.com/zos/k/60/cc.gif" width="800" alt="cc-teacher demo" />
-</div>
+Explains unfamiliar operations before Claude Code executes them.
 
 ## Why
 
@@ -18,11 +12,25 @@ What gets explained: Dockerfile, docker-compose.yml, GitHub Actions workflows, N
 
 ## Installation
 
-```bash
-curl -fsSL https://claude.io.alibaba-inc.com/install.sh | bash
+Requires Claude Code `1.0.33` or later.
+
+In Claude Code:
+
+```text
+/plugin marketplace add alibaba-flyai/cc-teacher
+/plugin install cc-teacher@alibaba-flyai-cc-teacher
+/reload-plugins
 ```
 
-Registers hooks in `~/.claude/settings.json`. A built-in API key is included for initial use.
+This installs `cc-teacher` from the repository's GitHub marketplace manifest in `.claude-plugin/marketplace.json`.
+
+For local development from a clone:
+
+```bash
+claude --plugin-dir .
+```
+
+`--plugin-dir .` means "load a plugin from the current directory for this Claude Code session only". It is useful for local development and debugging because changes in the repo are picked up immediately, but it does not install the plugin globally.
 
 ## Examples
 
@@ -70,66 +78,42 @@ Once a `(tool, operation)` pair has been explained in a session, cc-teacher exit
 
 ## Uninstall
 
-```bash
-curl -fsSL https://claude.io.alibaba-inc.com/uninstall.sh | bash
+```text
+/plugin uninstall cc-teacher@alibaba-flyai-cc-teacher
+/plugin marketplace remove alibaba-flyai-cc-teacher
+/reload-plugins
 ```
 
 ## Contributing
 
-### Internal contributor setup
-
-Before contributing from Alibaba internal network, complete the following setup:
-
-1. Configure your access key at [code.alibaba-inc.com/profile/keys](https://code.alibaba-inc.com/profile/keys)
-2. Generate an SSH key by following [the internal guide](https://aliyuque.antfin.com/alicode/docs/agoow0?spm=defwork..0.0.456722c1DiwJ7f#afRjq), or run:
+Clone from GitHub and run the plugin directly from the repository:
 
 ```bash
-ssh-keygen -t rsa -C "your-company-email"
-```
-
-3. Print your public key and copy it:
-
-```bash
-cat ~/.ssh/id_rsa.pub
-```
-
-4. Add that public key at [code.alibaba-inc.com/profile/keys](https://code.alibaba-inc.com/profile/keys)
-5. Configure your Git identity:
-
-```bash
-git config --global user.name "Your Name"
-git config --global user.email "your-company-email"
-```
-
-6. Clone the repository:
-
-```bash
-git clone git@gitlab.alibaba-inc.com:fliggy-claude/cc-teacher.git
+git clone https://github.com/alibaba-flyai/cc-teacher.git
 cd cc-teacher
-claude
+claude --plugin-dir .
 ```
 
 ### Project layout
 
 ```
 cc-teacher/
+├── .claude-plugin/
+│   ├── marketplace.json     # GitHub marketplace catalog for this repository
+│   └── plugin.json          # plugin metadata
 ├── knowledge/
 │   └── classifier.py        # all pattern rules, the only file you normally edit
 ├── hooks-handlers/
 │   └── pre-tool-use.py      # hook runtime: classify, call LLM, output warning, allow
 ├── hooks/
 │   └── hooks.json           # hook declarations
-├── .aoneci/
-│   └── deploy-pages.yaml    # Aone Pages CI config
-├── install.sh               # registers hooks in ~/.claude/settings.json
-└── uninstall.sh             # removes hooks from ~/.claude/settings.json
+└── CLAUDE.md                # contributor guidance for assistants working in this repo
 ```
 
 The following files are contributor tooling, not part of the installed plugin. They configure the AI assistant used when developing this project:
 
 ```
-├── CLAUDE.md                # project rules for Claude Code (language, conventions, file map)
-└── .claude/
+├── .claude/
     ├── rules/
     │   ├── classifier.md    # required fields and doc URL policy for new rules
     │   └── python.md        # Python conventions and verification commands
@@ -139,7 +123,7 @@ The following files are contributor tooling, not part of the installed plugin. T
 
 ### Tuning the exemption list
 
-The LLM decides what to explain. The only manual configuration is `SIMPLE_BASH_PATTERNS` and `SIMPLE_FILE_NAMES`/`SIMPLE_FILE_EXTENSIONS` in `knowledge/classifier.py` — operations that match these are skipped entirely without an LLM call.
+The LLM decides what to explain. The only manual configuration is `SIMPLE_BASH_PATTERNS` and `SIMPLE_FILE_NAMES`/`SIMPLE_FILE_EXTENSIONS` in `knowledge/classifier.py`, operations that match these are skipped entirely without an LLM call.
 
 If cc-teacher is explaining something too obvious, add a pattern to `SIMPLE_BASH_PATTERNS`:
 
@@ -154,8 +138,6 @@ python3 -c "from knowledge.classifier import classify_bash; print(classify_bash(
 # expect: None
 ```
 
-### Deployment
+### Distribution
 
-`install.sh` is served via [Aone Pages](https://pages.alibaba-inc.com/docs/intro) static hosting. The config lives in `.aoneci/deploy-pages.yaml`: no build step, repo root served directly. Pushing to `main` triggers an automatic deployment, so the script at `https://claude.io.alibaba-inc.com/install.sh` is always in sync with the latest commit.
-
-Changes to the exemption list in `knowledge/classifier.py` are picked up automatically on next tool call if installed from a local clone. For curl-based installs, users need to re-run `install.sh` to pull the updated files.
+This repository is distributed directly from GitHub through `.claude-plugin/marketplace.json`. If you install from a local clone with `claude --plugin-dir .`, changes to `knowledge/classifier.py` and `hooks-handlers/pre-tool-use.py` are picked up immediately in the next Claude Code session.

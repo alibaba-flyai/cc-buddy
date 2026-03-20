@@ -1,0 +1,21 @@
+{
+  "name": "alibaba-flyai-cc-teacher",
+  "owner": {
+    "name": "Alibaba FlyAI"
+  },
+  "metadata": {
+    "description": "GitHub marketplace for the cc-teacher Claude Code plugin"
+  },
+  "plugins": [
+    {
+      "name": "cc-teacher",
+      "description": "Explains unfamiliar operations before Claude Code executes them. Plain-language cards for shell commands and file edits, one explanation per session.",
+      "version": "1.0.0",
+      "author": {
+        "name": "Alibaba FlyAI"
+      },
+      "source": "./",
+      "category": "learning"
+    }
+  ]
+}
