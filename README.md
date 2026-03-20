@@ -20,7 +20,7 @@ Obvious operations like `ls`, `cat`, and `git status` are skipped without an LLM
 
 ## Installation
 
-In Claude Code CLI:
+In a fresh Claude Code CLI session:
 
 ```text
 /plugin marketplace add alibaba-flyai/cc-teacher
@@ -30,13 +30,13 @@ In Claude Code CLI:
 
 ## Examples
 
-In Claude Code CLI:
+In a fresh Claude Code CLI session, inside a project that does not already have `axios`:
 
 ```text
-帮我安装一个好用的请求库
+请直接执行 npm install axios
 ```
 
-If Claude chooses `axios`, `cc-teacher` may show:
+`cc-teacher` may show:
 
 ```text
 ☻ 安装 axios，一个基于 Promise 的 HTTP 客户端，用于浏览器和 Node.js 发起网络请求
