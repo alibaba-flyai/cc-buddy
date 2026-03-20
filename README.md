@@ -8,15 +8,15 @@
   <img src="https://gw.alipayobjects.com/zos/k/o5/cc.gif" width="800" alt="cc-teacher demo" />
 </div>
 
-`cc-teacher` adds a `PreToolUse` hook to Claude Code. Before a tool call runs, it decides whether the operation is worth explaining. If yes, it prints a short plain-language note and then lets the tool continue. The same operation is explained only once per session.
+Explains unfamiliar operations before Claude Code executes them.
 
-Typical examples:
-- Dockerfile, `docker-compose.yml`, GitHub Actions workflows
-- Next.js components, Prisma schema, `.env` files
-- `docker compose up`, `npm install`, `npx prisma migrate`
-- `sudo`, `rm -rf`, `git push --force`
+## Overview
 
-Obvious operations like `ls`, `cat`, and `git status` are skipped without an LLM call.
+Everyone has a blind spot. An engineer unfamiliar with Next.js copying a component, a backend developer touching a CI workflow, a frontend developer running their first database migration. Claude Code moves fast, but not everyone knows what just ran.
+
+cc-teacher adds a PreToolUse hook to Claude Code. Before each tool call, it checks whether the operation is worth explaining. If so, it delivers a one-line plain-language note and lets the tool proceed immediately. The same operation is only explained once per session.
+
+What gets explained: Dockerfile, `docker-compose.yml`, GitHub Actions workflows, Next.js components, Prisma schema, `.env` files, `docker compose up`, `npm install`, `npx prisma migrate`, `sudo`, `rm -rf`, `git push --force`, and similar. Trivially obvious operations (`ls`, `cat`, `git status`) are skipped without an LLM call.
 
 ## Installation
 
