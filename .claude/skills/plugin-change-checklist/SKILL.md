@@ -27,6 +27,7 @@ Use this skill when a change affects plugin behavior, distribution, provider con
    - Do not reintroduce curl-based install instructions
 
 3. If provider or auth logic changed:
+   - Current provider: `api.vivgrid.com`, model `gpt-5.4-mini`; auth via `CC_TEACHER_API_KEY` env var or `~/.claude/cc_teacher.conf`
    - Keep fallback keys obfuscated, for example base64
    - Do not commit plaintext keys
    - Preserve env var and local config override behavior when appropriate

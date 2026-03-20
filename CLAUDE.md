@@ -28,7 +28,7 @@ an LLM call; everything else is handled by the LLM.
 - Keep README concise, installation-first, and free of redundant explanation, prefer one primary example over multiple similar examples
 - When plugin behavior or distribution changes in a user-visible way, bump versions in both `.claude-plugin/plugin.json` and `.claude-plugin/marketplace.json`
 - Test hook behavior with a command that actually triggers `PreToolUse`, read-only search and file reads are not sufficient to validate the plugin
-- Ignore legacy internal `fai-2` keys when updating auth logic, do not let old local config silently override the current provider
+- Current LLM provider is `api.vivgrid.com`, model `gpt-5.4-mini`; ignore legacy `fai-2` keys, do not let old local config silently override
 
 ## Quick commands
 
@@ -71,3 +71,4 @@ claude plugins validate .
 - Marketplace name is `flyai`, install target is `cc-teacher@flyai`
 - User-facing plugin updates require version bumps, otherwise Claude Code may continue using cached plugin content
 - If users report "the old version is still installed", first check marketplace update, plugin update, reload, and current manifest version
+- `settings.local.json` sets `"enabledPlugins": {}` intentionally: disables cc-teacher in this project directory to prevent self-explanation loops during development
