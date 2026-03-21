@@ -66,6 +66,14 @@ exit 0     call LLM
 
 Once a `(tool, operation)` pair has been explained in a session, cc-teacher exits 0 on subsequent runs and does not interrupt again.
 
+## Update
+
+```bash
+claude plugins update cc-teacher@flyai
+```
+
+Then open a new Claude Code window to apply the update.
+
 ## Uninstall
 
 ```text
