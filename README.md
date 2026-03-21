@@ -90,15 +90,15 @@ git clone https://github.com/alibaba-flyai/cc-teacher.git
 cd cc-teacher
 ```
 
-To test changes, open a separate project (not cc-teacher itself) and pass the plugin directory:
+To test changes, open a separate project (not cc-teacher itself) and pass the cloned directory:
 
 ```bash
-# In a different project directory
+git clone https://github.com/alibaba-flyai/cc-teacher.git
 cd ~/your-other-project
-claude --plugin-dir ~/www/cc-teacher
+claude --plugin-dir /path/to/cloned/cc-teacher
 ```
 
-The `--plugin-dir` flag loads the plugin from that path for this session only, without installing it globally. You must use a different project because `settings.local.json` inside cc-teacher disables the plugin to prevent self-explanation loops during development.
+The `--plugin-dir` flag loads the plugin for this session only, without installing it globally. You must use a different project because `settings.local.json` inside cc-teacher disables the plugin to prevent self-explanation loops during development.
 
 Main files:
 
