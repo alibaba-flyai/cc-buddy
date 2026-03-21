@@ -112,6 +112,12 @@ hooks-handlers/permission-request.py PermissionRequest hook runtime
 hooks/hooks.json                     hook declarations
 ```
 
+Run the test suite locally without installing the plugin:
+
+```bash
+bash test.sh
+```
+
 If cc-teacher explains something too obvious, add a pattern to `SIMPLE_BASH_PATTERNS` in `knowledge/classifier.py` and verify it:
 
 ```bash

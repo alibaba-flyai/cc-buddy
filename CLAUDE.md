@@ -64,6 +64,7 @@ claude plugins validate .
 | `hooks-handlers/pre-tool-use.py` | PreToolUse hook: classify, call LLM, emit warning card, allow |
 | `hooks-handlers/permission-request.py` | PermissionRequest hook: inject explanation into permission dialog |
 | `hooks/hooks.json` | Hook handler declarations (uses CLAUDE_PLUGIN_ROOT, not relied on for local installs) |
+| `test.sh` | Local test runner -- validates exempted and explained commands without installing the plugin |
 | `.claude-plugin/plugin.json` | Plugin manifest consumed by Claude Code |
 | `.claude-plugin/marketplace.json` | Marketplace manifest for GitHub distribution |
 
