@@ -54,6 +54,7 @@ claude plugins validate .
 | Classifier change | `python3 -c "from knowledge.classifier import classify_bash, classify_code"` | No import error |
 | Hook change | `echo '{"session_id":"x","tool_name":"Bash","tool_input":{"command":"ls"}}' \| python3 hooks-handlers/pre-tool-use.py; echo $?` | exit 0 |
 | Key not leaked | `grep -r "viv-ccteacher-" . --include="*.py" --include="*.sh"` | No matches |
+| LLM prompt change | `bash test.sh` | 通过: 7  失败: 0 |
 
 ## File map
 

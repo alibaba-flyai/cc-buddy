@@ -106,6 +106,7 @@ def _call_llm(operation: str, lang_hint: str) -> str:
         f"First decide if this operation needs explanation. "
         f"If it is trivial or self-evident (e.g. version checks, simple reads, obvious one-liners), "
         f"return an empty string — output nothing. "
+        f"NEVER return empty for destructive or irreversible operations such as rm, delete, drop, truncate, force-push, or overwrite — always explain those. "
         f"Otherwise write 1-2 clauses explaining what it does. "
         f"Connect clauses with commas only — never use a period or full stop anywhere in the output. "
         f"If the operation installs or runs a named package or tool, briefly mention what it is for. "
