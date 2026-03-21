@@ -70,7 +70,7 @@ def _call_llm(operation: str) -> str:
     )
     with urllib.request.urlopen(req, timeout=LLM_TIMEOUT) as resp:
         body = json.loads(resp.read().decode())
-    return body["choices"][0]["message"]["content"].strip()
+    return body["choices"][0]["message"].get("content", "").strip()
 
 
 def _extract_operation(tool_name: str, tool_input: dict) -> tuple:

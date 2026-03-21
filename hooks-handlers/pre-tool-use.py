@@ -172,7 +172,7 @@ def _call_llm(operation: str, lang_hint: str) -> str:
     with urllib.request.urlopen(req, timeout=LLM_TIMEOUT) as resp:
         body = json.loads(resp.read().decode())
 
-    return " ".join(body["choices"][0]["message"]["content"].strip().splitlines())
+    return " ".join(body["choices"][0]["message"].get("content", "").strip().splitlines())
 
 
 # ---------------------------------------------------------------------------
