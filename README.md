@@ -17,9 +17,7 @@ It runs as a `PreToolUse` hook (and `PermissionRequest` hook for "ask each time"
 ## Installation
 
 ```bash
-claude plugins marketplace add alibaba-flyai/cc-teacher
-claude plugins install cc-teacher@flyai
-claude plugins reload
+claude plugins marketplace add alibaba-flyai/cc-teacher && claude plugins install cc-teacher@flyai
 ```
 
 Then **open a new Claude Code window**. Hooks are registered at session startup, so the current session will not pick up the plugin until you restart.
@@ -67,9 +65,7 @@ Once a `(tool, operation)` pair has been explained in a session, cc-teacher exit
 ## Update
 
 ```bash
-claude plugins marketplace update flyai
-claude plugins update cc-teacher@flyai
-claude plugins reload
+claude plugins marketplace update flyai && claude plugins update cc-teacher@flyai
 ```
 
 Then open a new Claude Code window to apply the update.
@@ -77,9 +73,7 @@ Then open a new Claude Code window to apply the update.
 ## Uninstall
 
 ```bash
-claude plugins uninstall cc-teacher@flyai
-claude plugins marketplace remove flyai
-claude plugins reload
+claude plugins uninstall cc-teacher@flyai && claude plugins marketplace remove flyai
 ```
 
 ## Development
