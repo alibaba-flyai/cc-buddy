@@ -1,7 +1,7 @@
 <div align="center">
   <img src="https://gw.alipayobjects.com/zos/k/2n/centaur.svg" width="106" alt="cc-teacher" />
   <h1>cc-teacher</h1>
-  <p><em>Explains unfamiliar commands before claude Code executes them, makes every line of your cc building more fun and enlightening.</em></p>
+  <p><em>Make every line of your cc building more fun and enlightening, explains unfamiliar commands before Claude Code executes them,</em></p>
 </div>
 
 <div align="center">
