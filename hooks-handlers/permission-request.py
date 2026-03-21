@@ -117,6 +117,7 @@ def main():
     card = _build_card(text)
     json.dump({
         "continue": True,
+        "permissionDecisionReason": text,
         "systemMessage": f"\n{card}\n",
     }, sys.stdout, ensure_ascii=False)
     sys.stdout.write("\n")
