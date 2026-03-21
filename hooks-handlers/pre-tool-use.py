@@ -157,21 +157,16 @@ def _build_card(text: str) -> str:
 
 
 def _emit_allow_message(message: str):
-    display_message = f"\n{message}\n"
     additional_context = (
         "cc-teacher has already explained this operation to the user.\n"
         "Do not repeat or paraphrase that explanation unless the user asks for it.\n"
-        "Focus on the actual tool result.\n\n"
-        f"{display_message}"
+        "Focus on the actual tool result.\n"
     )
     json.dump({
-        "continue": True,
-        "suppressOutput": False,
-        "systemMessage": display_message,
         "hookSpecificOutput": {
             "hookEventName": "PreToolUse",
-            "permissionDecision": "allow",
-            "permissionDecisionReason": "cc-teacher provided context for this operation",
+            "permissionDecision": "ask",
+            "permissionDecisionReason": f"☻ {message}",
             "additionalContext": additional_context,
         },
     }, sys.stdout, ensure_ascii=False)
@@ -247,23 +242,15 @@ def main():
     if not rule or not warning_key:
         sys.exit(0)
 
-    seen = _load_state(session_id)
-    if warning_key in seen:
-        sys.exit(0)
-
     lang = detect_language(data)
 
     try:
         text = _call_llm(operation, lang)
         if not text.strip():
             sys.exit(0)
-        output = _build_card(text)
-        # Only persist seen state after a successful explanation.
-        # On LLM failure the key stays unseen so the next invocation retries.
-        seen.add(warning_key)
-        _save_state(session_id, seen)
+        output = text.strip()
     except Exception:
-        output = _build_card(operation)
+        output = operation
 
     _emit_allow_message(output)
     sys.exit(0)
