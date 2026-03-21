@@ -26,6 +26,8 @@ SIMPLE_BASH_PATTERNS = [
     r"^uname(\s|$)",
     r"^env(\s|$)",
     r"^printenv(\s|$)",
+    r"^cat\s",
+    r"^git\s+status(\s|$)",
 ]
 
 SIMPLE_FILE_EXTENSIONS = {".md", ".txt", ".log", ".csv", ".lock"}

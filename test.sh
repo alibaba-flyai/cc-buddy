@@ -9,7 +9,8 @@ FAIL=0
 rm -f ~/.claude/cc_teacher_state_t.json \
        ~/.claude/cc_teacher_state_t2.json \
        ~/.claude/cc_teacher_state_t3.json \
-       ~/.claude/cc_teacher_state_t4.json
+       ~/.claude/cc_teacher_state_t4.json \
+       ~/.claude/cc_teacher_state_t5.json
 
 run() {
   local label="$1"
@@ -50,6 +51,7 @@ echo "=== 应该有输出 (explained) ==="
 run "npm install"  '{"session_id":"t2","tool_name":"Bash","tool_input":{"command":"npm install"}}' yes
 run "docker up"    '{"session_id":"t3","tool_name":"Bash","tool_input":{"command":"docker compose up -d"}}' yes
 run "rm -rf"       '{"session_id":"t4","tool_name":"Bash","tool_input":{"command":"rm -rf dist"}}' yes
+run "Edit tsx"     '{"session_id":"t5","tool_name":"Edit","tool_input":{"file_path":"src/app.ts","old_string":"foo","new_string":"bar"}}' yes
 
 echo ""
 echo "=== 结果 ==="
@@ -60,4 +62,5 @@ echo ""
 rm -f ~/.claude/cc_teacher_state_t.json \
        ~/.claude/cc_teacher_state_t2.json \
        ~/.claude/cc_teacher_state_t3.json \
-       ~/.claude/cc_teacher_state_t4.json
+       ~/.claude/cc_teacher_state_t4.json \
+       ~/.claude/cc_teacher_state_t5.json

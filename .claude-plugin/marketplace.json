@@ -10,7 +10,7 @@
     {
       "name": "cc-teacher",
       "description": "Explains unfamiliar operations before Claude Code executes them. Plain-language cards for shell commands and file edits, one explanation per session.",
-      "version": "1.2.10",
+      "version": "1.2.11",
       "author": {
         "name": "Alibaba FlyAI"
       },

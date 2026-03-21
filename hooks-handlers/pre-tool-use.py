@@ -167,13 +167,9 @@ def _emit_allow_message(message: str, tool_name: str = "Bash"):
     hook_output: dict = {
         "hookEventName": "PreToolUse",
         "additionalContext": additional_context,
+        "permissionDecision": "ask",
+        "permissionDecisionReason": message,
     }
-    if tool_name == "Bash":
-        # Bash uses the hook dialog which shows permissionDecisionReason.
-        hook_output["permissionDecision"] = "ask"
-        hook_output["permissionDecisionReason"] = message
-    # For Edit/Write/MultiEdit: omit permissionDecision so the standard
-    # diff dialog still appears; systemMessage shows the explanation before it.
     json.dump({
         "continue": True,
         "suppressOutput": False,
