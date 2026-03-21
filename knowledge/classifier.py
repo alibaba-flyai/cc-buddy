@@ -26,7 +26,7 @@ SIMPLE_BASH_PATTERNS = [
     r"^which\s",
     r"^type\s",
     r"^man\s",
-    r"^git\s+(status|log|diff|add|show|branch|stash\s+list)(\s|$)",
+    r"^git\s+(status|log|diff|add|show|branch|stash\s+list|push|pull|fetch|clone|checkout|merge|rebase|tag|remote)(\s|$)",
     r"^cd\s",
     r"^clear(\s|$)",
     r"^history(\s|$)",
@@ -36,6 +36,7 @@ SIMPLE_BASH_PATTERNS = [
     r"^env(\s|$)",
     r"^printenv(\s|$)",
     r"^(head|tail|grep|find|wc|sort|uniq|cut|sed|awk|tr|diff|less|more)\s",
+    r"^python3?\s+-[cm]\s",
 ]
 
 SIMPLE_FILE_EXTENSIONS = {".md", ".txt", ".log", ".csv", ".lock"}

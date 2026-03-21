@@ -68,12 +68,13 @@ Once a `(tool, operation)` pair has been explained in a session, cc-teacher exit
 
 ## Update
 
-```bash
-claude plugins marketplace update flyai
-claude plugins update cc-teacher@flyai
+```text
+/plugin marketplace update flyai
+/plugin update cc-teacher@flyai
+/reload-plugins
 ```
 
-Then run `/reload-plugins` in Claude Code and open a new window to apply the update.
+Then open a new Claude Code window to apply the update.
 
 ## Uninstall
 
