@@ -96,11 +96,13 @@ claude --plugin-dir .
 Main files:
 
 ```text
-.claude-plugin/plugin.json      plugin manifest
-.claude-plugin/marketplace.json marketplace manifest
-knowledge/classifier.py         exemption list
-hooks-handlers/pre-tool-use.py  hook runtime
-hooks/hooks.json                hook declaration
+.claude-plugin/plugin.json           plugin manifest
+.claude-plugin/marketplace.json      marketplace manifest
+knowledge/classifier.py              exemption list
+knowledge/llm_client.py              shared LLM config and helpers
+hooks-handlers/pre-tool-use.py       PreToolUse hook runtime
+hooks-handlers/permission-request.py PermissionRequest hook runtime
+hooks/hooks.json                     hook declarations
 ```
 
 If cc-teacher explains something too obvious, add a pattern to `SIMPLE_BASH_PATTERNS` in `knowledge/classifier.py` and verify it:

@@ -9,11 +9,10 @@
 
 ## What this project is
 
-A Claude Code plugin. The PreToolUse hook (`hooks-handlers/pre-tool-use.py`) checks whether an
-operation is in the exemption list, then calls an LLM to decide if explanation is needed and
-generate it. `knowledge/classifier.py` maintains only the exemption list (`SIMPLE_BASH_PATTERNS`,
-`SIMPLE_FILE_NAMES`, `SIMPLE_FILE_EXTENSIONS`) -- trivially obvious operations are skipped without
-an LLM call; everything else is handled by the LLM.
+A Claude Code plugin with two hooks: `PreToolUse` (shown inline in accept-edits mode) and
+`PermissionRequest` (shown inside the permission dialog in ask-each-time mode). Both hooks check
+the exemption list in `knowledge/classifier.py`, then call an LLM to decide if explanation is
+needed. Shared LLM config and helpers live in `knowledge/llm_client.py`.
 
 ## Critical rules
 
@@ -51,7 +50,7 @@ claude plugins validate .
 
 | Task | Command | Pass condition |
 |---|---|---|
-| Syntax check | `python3 -m py_compile hooks-handlers/pre-tool-use.py knowledge/classifier.py` | No output |
+| Syntax check | `python3 -m py_compile hooks-handlers/pre-tool-use.py hooks-handlers/permission-request.py knowledge/classifier.py knowledge/llm_client.py` | No output |
 | Classifier change | `python3 -c "from knowledge.classifier import classify_bash, classify_code"` | No import error |
 | Hook change | `echo '{"session_id":"x","tool_name":"Bash","tool_input":{"command":"ls"}}' \| python3 hooks-handlers/pre-tool-use.py; echo $?` | exit 0 |
 | Key not leaked | `grep -r "viv-ccteacher-" . --include="*.py" --include="*.sh"` | No matches |
@@ -61,7 +60,9 @@ claude plugins validate .
 | File | Purpose |
 |---|---|
 | `knowledge/classifier.py` | Exemption list only -- add patterns here to silence over-eager LLM explanations |
-| `hooks-handlers/pre-tool-use.py` | Hook runtime: classify, call LLM, emit warning, allow |
+| `knowledge/llm_client.py` | Shared LLM config, `get_api_key()`, `detect_language()` |
+| `hooks-handlers/pre-tool-use.py` | PreToolUse hook: classify, call LLM, emit warning card, allow |
+| `hooks-handlers/permission-request.py` | PermissionRequest hook: inject explanation into permission dialog |
 | `hooks/hooks.json` | Hook handler declarations (uses CLAUDE_PLUGIN_ROOT, not relied on for local installs) |
 | `.claude-plugin/plugin.json` | Plugin manifest consumed by Claude Code |
 | `.claude-plugin/marketplace.json` | Marketplace manifest for GitHub distribution |
