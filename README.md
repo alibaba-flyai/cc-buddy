@@ -88,10 +88,16 @@ Then run `/reload-plugins` in Claude Code and open a new window to apply the upd
 ```bash
 git clone https://github.com/alibaba-flyai/cc-teacher.git
 cd cc-teacher
-claude --plugin-dir .
 ```
 
-`claude --plugin-dir .` loads the plugin from the current directory for the current Claude Code session only. It is for local development and debugging, not global installation.
+To test, run from a separate project directory:
+
+```bash
+cd ~/your-project
+claude --plugin-dir ~/path/to/cc-teacher
+```
+
+`claude --plugin-dir` loads the plugin for the current session only. Run it from a different project because `settings.local.json` in the cc-teacher directory intentionally disables the plugin to prevent self-explanation loops.
 
 Main files:
 
