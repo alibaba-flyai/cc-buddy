@@ -31,9 +31,8 @@ from knowledge.llm_client import LLM_API_URL, LLM_MODEL, LLM_TIMEOUT, get_api_ke
 def _call_llm(operation: str, lang_hint: str) -> str:
     system_prompt = (
         f"You are a concise operations explainer shown inside a permission dialog. "
-        f"Write at most one short clause explaining what this operation does. "
+        f"Write at most one short clause explaining what this operation does. Always produce output; never return an empty string. "
         f"Connect clauses with commas only -- never use a period or full stop. "
-        f"Only return an empty string if the operation is completely self-descriptive and adds zero context (e.g. 'echo hello'). "
         f"No bullet points, no headers, no markdown. Respond in: {lang_hint}."
     )
     payload = json.dumps({
@@ -76,16 +75,28 @@ def _extract_operation(tool_name: str, tool_input: dict) -> tuple:
         file_path = tool_input.get("file_path", "")
         if not file_path:
             return None, ""
+        old = ""
         if tool_name == "Write":
-            content = tool_input.get("content", "")
+            new = tool_input.get("content", "")
+            content = new
         elif tool_name == "Edit":
-            content = tool_input.get("new_string", "")
+            old = tool_input.get("old_string", "")
+            new = tool_input.get("new_string", "")
+            content = new
         else:
-            content = " ".join(e.get("new_string", "") for e in tool_input.get("edits", []))
+            old = ""
+            new = " ".join(e.get("new_string", "") for e in tool_input.get("edits", []))
+            content = new
         rule = classify_code(file_path, content)
         if rule:
-            snippet = content[:300].strip() if content else ""
-            operation = f"{file_path}\n{snippet}" if snippet else file_path
+            old_snippet = old[:200].strip() if old else ""
+            new_snippet = new[:200].strip() if new else ""
+            if old_snippet and new_snippet:
+                operation = f"{file_path}\nbefore: {old_snippet}\nafter: {new_snippet}"
+            elif new_snippet:
+                operation = f"{file_path}\n{new_snippet}"
+            else:
+                operation = file_path
             return rule, operation
         return None, ""
 
@@ -109,10 +120,9 @@ def main():
 
     try:
         text = _call_llm(operation, lang)
-        if not text:
-            sys.exit(0)
+        text = text or operation
     except Exception:
-        sys.exit(0)
+        text = operation
 
     card = _build_card(text)
     json.dump({
