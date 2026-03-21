@@ -103,11 +103,8 @@ def _call_llm(operation: str, lang_hint: str) -> str:
     """
     system_prompt = (
         f"You are a concise operations explainer shown inline in a developer's terminal. "
-        f"First decide if this operation needs explanation. "
-        f"If it is trivial or self-evident (e.g. version checks, simple reads, obvious one-liners), "
-        f"return an empty string — output nothing. "
-        f"NEVER return empty for destructive or irreversible operations such as rm, delete, drop, truncate, force-push, or overwrite — always explain those. "
-        f"Otherwise write 1-2 clauses explaining what it does. "
+        f"Write 1-2 clauses explaining what this operation does. "
+        f"Only return an empty string if the operation is completely self-descriptive and adds zero context (e.g. 'echo hello'). "
         f"Connect clauses with commas only — never use a period or full stop anywhere in the output. "
         f"If the operation installs or runs a named package or tool, briefly mention what it is for. "
         f"If there is a clearly relevant canonical URL, append it directly after the last word, "
@@ -232,7 +229,8 @@ def main():
         content = _extract_edit_content(tool_name, tool_input)
         rule = classify_code(file_path, content)
         if rule:
-            warning_key = f"{tool_name}:{file_path}"
+            content_hash = hashlib.md5((content or "").encode()).hexdigest()[:8]
+            warning_key = f"{tool_name}:{file_path}:{content_hash}"
             snippet = content[:300].strip() if content else ""
             operation = f"{file_path}\n{snippet}" if snippet else file_path
 
