@@ -6,50 +6,24 @@ Injects an explanation into the permission dialog so users in "ask each time"
 mode get context before they decide whether to allow the operation.
 """
 
-import base64
 import json
-import os
 import sys
 import urllib.request
 
-_PLUGIN_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+_PLUGIN_ROOT = __import__("os").path.dirname(__import__("os").path.dirname(__import__("os").path.abspath(__file__)))
 sys.path.insert(0, _PLUGIN_ROOT)
 
 from knowledge.classifier import classify_bash, classify_code
-
-LLM_API_URL = "https://api.vivgrid.com/v1/chat/completions"
-LLM_MODEL   = "gpt-5.4-mini"
-LLM_TIMEOUT = 30
-
-_FALLBACK = base64.b64decode("***REDACTED_B64***").decode()
+from knowledge.llm_client import LLM_API_URL, LLM_MODEL, LLM_TIMEOUT, get_api_key, detect_language
 
 
-def _get_api_key() -> str:
-    key = os.environ.get("CC_TEACHER_API_KEY", "").strip()
-    if key and not key.startswith("fai-2"):
-        return key
-    conf = os.path.expanduser("~/.claude/cc_teacher.conf")
-    if os.path.exists(conf):
-        try:
-            with open(conf) as f:
-                for line in f:
-                    line = line.strip()
-                    if line.startswith("CC_TEACHER_API_KEY="):
-                        key = line.split("=", 1)[1].strip()
-                        if key and not key.startswith("fai-2"):
-                            return key
-        except IOError:
-            pass
-    return _FALLBACK
-
-
-def _call_llm(operation: str) -> str:
+def _call_llm(operation: str, lang_hint: str) -> str:
     system_prompt = (
-        "You are a concise operations explainer shown inside a permission dialog. "
-        "Write at most one short clause explaining what this operation does. "
-        "Connect clauses with commas only -- never use a period or full stop. "
-        "If trivial or self-evident, return an empty string. "
-        "No bullet points, no headers, no markdown."
+        f"You are a concise operations explainer shown inside a permission dialog. "
+        f"Write at most one short clause explaining what this operation does. "
+        f"Connect clauses with commas only -- never use a period or full stop. "
+        f"If trivial or self-evident, return an empty string. "
+        f"No bullet points, no headers, no markdown. Respond in: {lang_hint}."
     )
     payload = json.dumps({
         "model": LLM_MODEL,
@@ -64,7 +38,7 @@ def _call_llm(operation: str) -> str:
         data=payload,
         headers={
             "Content-Type": "application/json",
-            "Authorization": f"Bearer {_get_api_key()}",
+            "Authorization": f"Bearer {get_api_key()}",
         },
         method="POST",
     )
@@ -114,8 +88,10 @@ def main():
     if not rule or not operation:
         sys.exit(0)
 
+    lang = detect_language(data)
+
     try:
-        text = _call_llm(operation)
+        text = _call_llm(operation, lang)
         if not text:
             sys.exit(0)
     except Exception:

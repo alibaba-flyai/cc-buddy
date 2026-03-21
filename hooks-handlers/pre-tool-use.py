@@ -10,7 +10,6 @@ On first encounter of a non-trivial operation:
 On subsequent encounters within the same session: exits 0 (no interruption).
 """
 
-import base64
 import hashlib
 import json
 import os
@@ -25,14 +24,10 @@ _PLUGIN_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, _PLUGIN_ROOT)
 
 from knowledge.classifier import classify_bash, classify_code
+from knowledge.llm_client import LLM_API_URL, LLM_MODEL, LLM_TIMEOUT, get_api_key, detect_language
 
-LLM_API_URL = "https://api.vivgrid.com/v1/chat/completions"
-LLM_MODEL   = "gpt-5.4-mini"
-LLM_TIMEOUT = 30  # seconds
 ACCENT = "\033[38;2;217;121;89m"
 RESET = "\033[0m"
-
-_FALLBACK = base64.b64decode("***REDACTED_B64***").decode()
 
 
 # ---------------------------------------------------------------------------
@@ -101,29 +96,6 @@ def _save_state(session_id: str, keys: set):
 # LLM call
 # ---------------------------------------------------------------------------
 
-def _get_api_key() -> str:
-    # Priority: environment variable > ~/.claude/cc_teacher.conf > fallback
-    # Ignore legacy internal keys so existing installs migrate cleanly.
-    key = os.environ.get("CC_TEACHER_API_KEY", "").strip()
-    if key and not key.startswith("fai-2"):
-        return key
-
-    conf = os.path.expanduser("~/.claude/cc_teacher.conf")
-    if os.path.exists(conf):
-        try:
-            with open(conf) as f:
-                for line in f:
-                    line = line.strip()
-                    if line.startswith("CC_TEACHER_API_KEY="):
-                        key = line.split("=", 1)[1].strip()
-                        if key and not key.startswith("fai-2"):
-                            return key
-        except IOError:
-            pass
-
-    return _FALLBACK
-
-
 def _call_llm(operation: str, lang_hint: str) -> str:
     """
     Ask the LLM to produce the final display text for this operation.
@@ -148,14 +120,12 @@ def _call_llm(operation: str, lang_hint: str) -> str:
         f"  Delete files and directories recursively and without confirmation prompt https://man7.org/linux/man-pages/man1/rm.1.html"
     )
 
-    user_prompt = f"Operation: {operation}"
-
     payload = json.dumps({
         "model": LLM_MODEL,
         "stream": False,
         "messages": [
             {"role": "system", "content": system_prompt},
-            {"role": "user",   "content": user_prompt},
+            {"role": "user",   "content": f"Operation: {operation}"},
         ],
     }).encode()
 
@@ -164,7 +134,7 @@ def _call_llm(operation: str, lang_hint: str) -> str:
         data=payload,
         headers={
             "Content-Type": "application/json",
-            "Authorization": f"Bearer {_get_api_key()}",
+            "Authorization": f"Bearer {get_api_key()}",
         },
         method="POST",
     )
@@ -214,7 +184,6 @@ def _emit_allow_message(message: str):
 # Input helpers
 # ---------------------------------------------------------------------------
 
-
 def _extract_edit_content(tool_name: str, tool_input: dict) -> str:
     if tool_name == "Write":
         return tool_input.get("content", "")
@@ -225,31 +194,12 @@ def _extract_edit_content(tool_name: str, tool_input: dict) -> str:
     return ""
 
 
-def _detect_language(data: dict) -> str:
-    """
-    Best-effort language detection from hook input.
-    Falls back to Chinese (most common user language).
-    """
-    # Some Claude Code versions include recent messages in the hook payload
-    messages = data.get("messages") or data.get("transcript") or []
-    for msg in reversed(messages):
-        content = msg.get("content", "")
-        if isinstance(content, str) and content.strip():
-            # Rough CJK detection
-            cjk = sum(1 for c in content if "\u4e00" <= c <= "\u9fff")
-            if cjk / max(len(content), 1) > 0.1:
-                return "Chinese (Simplified)"
-            if content.isascii():
-                return "English"
-    return "Chinese (Simplified)"
-
-
 # ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
 
 def main():
-    if random.random() < 0.1:
+    if random.random() < 0.2:
         _cleanup_old_states()
 
     try:
@@ -292,16 +242,17 @@ def main():
     if warning_key in seen:
         sys.exit(0)
 
-    seen.add(warning_key)
-    _save_state(session_id, seen)
-
-    lang = _detect_language(data)
+    lang = detect_language(data)
 
     try:
         text = _call_llm(operation, lang)
         if not text.strip():
             sys.exit(0)
         output = _build_card(text)
+        # Only persist seen state after a successful explanation.
+        # On LLM failure the key stays unseen so the next invocation retries.
+        seen.add(warning_key)
+        _save_state(session_id, seen)
     except Exception:
         output = _build_card(operation)
 

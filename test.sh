@@ -5,6 +5,12 @@ HOOK="python3 hooks-handlers/pre-tool-use.py"
 PASS=0
 FAIL=0
 
+# 清理上次测试留下的 state 文件
+rm -f ~/.claude/cc_teacher_state_t.json \
+       ~/.claude/cc_teacher_state_t2.json \
+       ~/.claude/cc_teacher_state_t3.json \
+       ~/.claude/cc_teacher_state_t4.json
+
 run() {
   local label="$1"
   local payload="$2"
@@ -49,3 +55,9 @@ echo ""
 echo "=== 结果 ==="
 echo "  通过: $PASS  失败: $FAIL"
 echo ""
+
+# 清理本次测试生成的 state 文件
+rm -f ~/.claude/cc_teacher_state_t.json \
+       ~/.claude/cc_teacher_state_t2.json \
+       ~/.claude/cc_teacher_state_t3.json \
+       ~/.claude/cc_teacher_state_t4.json
