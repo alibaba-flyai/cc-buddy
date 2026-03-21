@@ -69,6 +69,7 @@ Once a `(tool, operation)` pair has been explained in a session, cc-teacher exit
 ## Update
 
 ```bash
+claude plugins marketplace update flyai
 claude plugins update cc-teacher@flyai
 ```
 
