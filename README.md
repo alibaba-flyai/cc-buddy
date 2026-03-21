@@ -73,7 +73,7 @@ claude plugins marketplace update flyai
 claude plugins update cc-teacher@flyai
 ```
 
-Then open a new Claude Code window to apply the update.
+Then run `/reload-plugins` in Claude Code and open a new window to apply the update.
 
 ## Uninstall
 
