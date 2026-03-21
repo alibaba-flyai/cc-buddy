@@ -20,7 +20,7 @@ It runs as a `PreToolUse` hook (and `PermissionRequest` hook for "ask each time"
 claude plugins marketplace add alibaba-flyai/cc-teacher && claude plugins install cc-teacher@flyai
 ```
 
-Then **open a new Claude Code window**. Hooks are registered at session startup, so the current session will not pick up the plugin until you restart.
+Then run `/reload-plugins` inside Claude Code to activate without restarting.
 
 ## Examples
 
@@ -68,13 +68,15 @@ Once a `(tool, operation)` pair has been explained in a session, cc-teacher exit
 claude plugins marketplace update flyai && claude plugins update cc-teacher@flyai
 ```
 
-Then open a new Claude Code window to apply the update.
+Then run `/reload-plugins` inside Claude Code to apply the update.
 
 ## Uninstall
 
 ```bash
 claude plugins uninstall cc-teacher@flyai && claude plugins marketplace remove flyai
 ```
+
+Then run `/reload-plugins` inside Claude Code.
 
 ## Development
 
