@@ -171,7 +171,7 @@ def _emit_allow_message(message: str):
         "hookSpecificOutput": {
             "hookEventName": "PreToolUse",
             "permissionDecision": "ask",
-            "permissionDecisionReason": "cc-teacher provided context for this operation",
+            "permissionDecisionReason": message,
             "additionalContext": additional_context,
         },
     }, sys.stdout, ensure_ascii=False)
