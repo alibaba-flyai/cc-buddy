@@ -182,14 +182,18 @@ def _emit_allow_message(message: str):
 # Input helpers
 # ---------------------------------------------------------------------------
 
-def _extract_edit_content(tool_name: str, tool_input: dict) -> str:
+def _extract_edit_content(tool_name: str, tool_input: dict) -> tuple:
+    """Returns (old, new) strings for the edit."""
     if tool_name == "Write":
-        return tool_input.get("content", "")
+        return "", tool_input.get("content", "")
     if tool_name == "Edit":
-        return tool_input.get("new_string", "")
+        return tool_input.get("old_string", ""), tool_input.get("new_string", "")
     if tool_name == "MultiEdit":
-        return " ".join(e.get("new_string", "") for e in tool_input.get("edits", []))
-    return ""
+        edits = tool_input.get("edits", [])
+        old = " ".join(e.get("old_string", "") for e in edits)
+        new = " ".join(e.get("new_string", "") for e in edits)
+        return old, new
+    return "", ""
 
 
 # ---------------------------------------------------------------------------
@@ -226,13 +230,19 @@ def main():
         file_path = tool_input.get("file_path", "")
         if not file_path:
             sys.exit(0)
-        content = _extract_edit_content(tool_name, tool_input)
-        rule = classify_code(file_path, content)
+        old_content, new_content = _extract_edit_content(tool_name, tool_input)
+        rule = classify_code(file_path, new_content)
         if rule:
-            content_hash = hashlib.md5((content or "").encode()).hexdigest()[:8]
+            content_hash = hashlib.md5((new_content or "").encode()).hexdigest()[:8]
             warning_key = f"{tool_name}:{file_path}:{content_hash}"
-            snippet = content[:300].strip() if content else ""
-            operation = f"{file_path}\n{snippet}" if snippet else file_path
+            old_snippet = old_content[:200].strip() if old_content else ""
+            new_snippet = new_content[:200].strip() if new_content else ""
+            if old_snippet and new_snippet:
+                operation = f"{file_path}\nbefore: {old_snippet}\nafter: {new_snippet}"
+            elif new_snippet:
+                operation = f"{file_path}\n{new_snippet}"
+            else:
+                operation = file_path
 
     if not rule or not warning_key:
         sys.exit(0)
