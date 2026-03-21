@@ -22,7 +22,7 @@ def _call_llm(operation: str, lang_hint: str) -> str:
         f"You are a concise operations explainer shown inside a permission dialog. "
         f"Write at most one short clause explaining what this operation does. "
         f"Connect clauses with commas only -- never use a period or full stop. "
-        f"If trivial or self-evident, return an empty string. "
+        f"Only return an empty string if the operation is completely self-descriptive and adds zero context (e.g. 'echo hello'). "
         f"No bullet points, no headers, no markdown. Respond in: {lang_hint}."
     )
     payload = json.dumps({
