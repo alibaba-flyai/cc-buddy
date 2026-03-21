@@ -66,6 +66,12 @@ def _extract_operation(tool_name: str, tool_input: dict) -> tuple:
         rule = classify_bash(command)
         return rule, command.strip() if rule else ""
 
+    if tool_name == "WebFetch":
+        url = tool_input.get("url", "")
+        if not url:
+            return None, ""
+        return {"name": "operation"}, f"fetch {url}"
+
     if tool_name in ("Edit", "Write", "MultiEdit"):
         file_path = tool_input.get("file_path", "")
         if not file_path:
