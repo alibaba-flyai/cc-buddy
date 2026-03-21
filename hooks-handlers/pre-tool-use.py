@@ -157,16 +157,21 @@ def _build_card(text: str) -> str:
 
 
 def _emit_allow_message(message: str):
+    card = _build_card(message)
     additional_context = (
         "cc-teacher has already explained this operation to the user.\n"
         "Do not repeat or paraphrase that explanation unless the user asks for it.\n"
-        "Focus on the actual tool result.\n"
+        "Focus on the actual tool result.\n\n"
+        f"{card}"
     )
     json.dump({
+        "continue": True,
+        "suppressOutput": False,
+        "systemMessage": f"\n{card}\n",
         "hookSpecificOutput": {
             "hookEventName": "PreToolUse",
             "permissionDecision": "ask",
-            "permissionDecisionReason": f"☻ {message}",
+            "permissionDecisionReason": "cc-teacher provided context for this operation",
             "additionalContext": additional_context,
         },
     }, sys.stdout, ensure_ascii=False)
