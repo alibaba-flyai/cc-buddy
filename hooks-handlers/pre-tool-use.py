@@ -167,14 +167,9 @@ def _emit_allow_message(message: str, tool_name: str = "Bash"):
     hook_output: dict = {
         "hookEventName": "PreToolUse",
         "additionalContext": additional_context,
+        "permissionDecision": "ask",
+        "permissionDecisionReason": message,
     }
-    # Bash: inject explanation into the permission dialog via permissionDecision.
-    # Edit/Write/MultiEdit: use systemMessage only; these tools have their own
-    # built-in diff confirmation dialog that fires before PreToolUse, so
-    # permissionDecision cannot inject into it.
-    if tool_name == "Bash":
-        hook_output["permissionDecision"] = "ask"
-        hook_output["permissionDecisionReason"] = message
     json.dump({
         "continue": True,
         "suppressOutput": False,
