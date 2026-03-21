@@ -103,8 +103,7 @@ def _call_llm(operation: str, lang_hint: str) -> str:
     """
     system_prompt = (
         f"You are a concise operations explainer shown inline in a developer's terminal. "
-        f"Write 1-2 clauses explaining what this operation does. "
-        f"Only return an empty string if the operation is completely self-descriptive and adds zero context (e.g. 'echo hello'). "
+        f"Write 1-2 clauses explaining what this operation does. Always produce output; never return an empty string. "
         f"Connect clauses with commas only — never use a period or full stop anywhere in the output. "
         f"If the operation installs or runs a named package or tool, briefly mention what it is for. "
         f"If there is a clearly relevant canonical URL, append it directly after the last word, "
@@ -252,9 +251,7 @@ def main():
 
     try:
         text = _call_llm(operation, lang)
-        if not text.strip():
-            sys.exit(0)
-        output = text.strip()
+        output = text.strip() or operation
     except Exception:
         output = operation
 
