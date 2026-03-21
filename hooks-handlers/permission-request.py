@@ -8,7 +8,18 @@ mode get context before they decide whether to allow the operation.
 
 import json
 import sys
+import textwrap
 import urllib.request
+
+ACCENT = "\033[38;2;217;121;89m"
+RESET  = "\033[0m"
+
+
+def _build_card(text: str) -> str:
+    lines = textwrap.wrap(text.strip(), width=88, break_long_words=False, break_on_hyphens=False)
+    if not lines:
+        return ""
+    return f"{ACCENT}☻{RESET} " + "\n  ".join(lines)
 
 _PLUGIN_ROOT = __import__("os").path.dirname(__import__("os").path.dirname(__import__("os").path.abspath(__file__)))
 sys.path.insert(0, _PLUGIN_ROOT)
@@ -97,7 +108,11 @@ def main():
     except Exception:
         sys.exit(0)
 
-    json.dump({"permissionDecisionReason": text}, sys.stdout, ensure_ascii=False)
+    card = _build_card(text)
+    json.dump({
+        "continue": True,
+        "systemMessage": f"\n{card}\n",
+    }, sys.stdout, ensure_ascii=False)
     sys.stdout.write("\n")
     sys.exit(0)
 
