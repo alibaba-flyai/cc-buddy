@@ -156,7 +156,7 @@ def _build_card(text: str) -> str:
     return f"{ACCENT}☻{RESET} " + "\n  ".join(lines)
 
 
-def _emit_allow_message(message: str):
+def _emit_allow_message(message: str, tool_name: str = "Bash"):
     card = _build_card(message)
     additional_context = (
         "cc-teacher has already explained this operation to the user.\n"
@@ -164,16 +164,21 @@ def _emit_allow_message(message: str):
         "Focus on the actual tool result.\n\n"
         f"{card}"
     )
+    hook_output: dict = {
+        "hookEventName": "PreToolUse",
+        "additionalContext": additional_context,
+    }
+    if tool_name == "Bash":
+        # Bash uses the hook dialog which shows permissionDecisionReason.
+        hook_output["permissionDecision"] = "ask"
+        hook_output["permissionDecisionReason"] = message
+    # For Edit/Write/MultiEdit: omit permissionDecision so the standard
+    # diff dialog still appears; systemMessage shows the explanation before it.
     json.dump({
         "continue": True,
         "suppressOutput": False,
         "systemMessage": f"\n{card}\n",
-        "hookSpecificOutput": {
-            "hookEventName": "PreToolUse",
-            "permissionDecision": "ask",
-            "permissionDecisionReason": message,
-            "additionalContext": additional_context,
-        },
+        "hookSpecificOutput": hook_output,
     }, sys.stdout, ensure_ascii=False)
     sys.stdout.write("\n")
 
@@ -257,7 +262,7 @@ def main():
     except Exception:
         output = operation
 
-    _emit_allow_message(output)
+    _emit_allow_message(output, tool_name)
     sys.exit(0)
 
 
