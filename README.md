@@ -1,7 +1,7 @@
 <div align="center">
   <img src="https://gw.alipayobjects.com/zos/k/2n/centaur.svg" width="106" alt="cc-teacher" />
   <h1>cc-teacher</h1>
-  <p><em>Explains unfamiliar operations before Claude Code executes them.</em></p>
+  <p><em>Make every line of your cc building more fun and enlightening, by commenting codes real-time before Claude Code executes them.</em></p>
 </div>
 
 <div align="center">
@@ -10,7 +10,7 @@
 
 ## Overview
 
-cc-teacher adds lightweight guidance to Claude Code at the moment an operation is about to run. It is meant for cases where the tool call is valid, but the user may not immediately understand what it does or why it matters.
+cc-teacher adds lightweight guidance to Claude Code at the moment an operation is about to run. It is meant for cases where the tool call is valid, but the builder may not immediately understand what it does or why it matters.
 
 It runs as a `PreToolUse` hook (and `PermissionRequest` hook for "ask each time" mode), explains non-trivial operations in one short line, then lets execution continue. The same `(tool, operation)` pair is only explained once per session. Typical cases include Docker, CI workflows, Next.js files, Prisma commands, `.env` files, package installation, and riskier shell commands such as `sudo`, `rm -rf`, or `git push --force`. Trivially obvious operations like `ls`, `cat`, and `git status` are skipped without an LLM call.
 
