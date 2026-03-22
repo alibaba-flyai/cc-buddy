@@ -74,7 +74,8 @@ Then open a new Claude Code window to apply the update.
 ## Uninstall
 
 ```bash
-claude plugins uninstall cc-teacher@flyai && claude plugins marketplace remove flyai
+claude plugins uninstall cc-teacher@flyai
+claude plugins marketplace remove flyai
 ```
 
 Then open a new Claude Code window.
