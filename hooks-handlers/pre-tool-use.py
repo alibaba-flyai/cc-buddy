@@ -2,21 +2,20 @@
 """
 cc-teacher PreToolUse hook.
 
-For Bash commands:
-  - Calls an external LLM to generate a contextual explanation.
-  - Shows the explanation inline via systemMessage.
+Bash:
+  - Calls an external LLM for a contextual explanation.
+  - Shows explanation inline via systemMessage.
 
-For Edit/Write/MultiEdit operations:
-  - First attempt: blocks the edit, instructs Claude to explain first.
-  - Second attempt (after Claude explains): allows the edit to proceed.
-  - No external API call needed; Claude explains using its own intelligence.
+Edit / Write / MultiEdit:
+  - Calls an external LLM for a contextual explanation.
+  - Writes explanation directly to /dev/tty (bypasses Claude Code capture).
+  - Exits 0 so the normal permission dialog appears after the explanation.
 """
 
 import json
 import os
 import sys
 import textwrap
-import time
 import urllib.request
 
 _PLUGIN_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -26,36 +25,14 @@ from knowledge.classifier import classify_bash, classify_code
 from knowledge.llm_client import LLM_API_URL, LLM_MODEL, LLM_TIMEOUT, get_api_key, detect_language
 
 ACCENT = "\033[38;2;217;121;89m"
-RESET = "\033[0m"
-
-_STATE_DIR = os.path.expanduser("~/.claude")
+RESET  = "\033[0m"
 
 
 # ---------------------------------------------------------------------------
-# LLM call (Bash only)
+# LLM calls
 # ---------------------------------------------------------------------------
 
-def _call_llm(operation: str, lang_hint: str) -> str:
-    """
-    Ask the LLM to produce the final display text for this operation.
-    Returns a ready-to-display string, or empty string to skip output entirely.
-    """
-    system_prompt = (
-        f"You are a concise operations explainer shown inline in a developer's terminal. "
-        f"Write 1-2 clauses explaining what this operation does. Always produce output; never return an empty string. "
-        f"Connect clauses with commas only, never use a period or full stop anywhere in the output. "
-        f"If the operation installs or runs a named package or tool, briefly mention what it is for. "
-        f"If there is a clearly relevant canonical URL, append it directly after the last word, "
-        f"separated by a single space, no punctuation, no transition phrase before the URL. "
-        f"Only mention risk or caveats when there is a real one worth calling out. "
-        f"No bullet points, no headers, no markdown. Respond in: {lang_hint}.\n\n"
-        f"Examples of correct output:\n"
-        f"  安装 axios，一个基于 Promise 的 HTTP 客户端，用于浏览器和 Node.js 发起网络请求 https://axios-http.com\n"
-        f"  对比 schema.prisma 与数据库现状，生成并执行迁移，同时更新 Prisma Client 类型 https://www.prisma.io/docs/orm/prisma-migrate\n"
-        f"  Install axios, a Promise-based HTTP client for browsers and Node.js https://axios-http.com\n"
-        f"  Delete files and directories recursively and without confirmation prompt https://man7.org/linux/man-pages/man1/rm.1.html"
-    )
-
+def _call_llm(operation: str, lang_hint: str, system_prompt: str) -> str:
     payload = json.dumps({
         "model": LLM_MODEL,
         "stream": False,
@@ -81,55 +58,44 @@ def _call_llm(operation: str, lang_hint: str) -> str:
     return " ".join(body["choices"][0]["message"].get("content", "").strip().splitlines())
 
 
-# ---------------------------------------------------------------------------
-# Edit state management
-# ---------------------------------------------------------------------------
-
-def _state_path(session_id: str) -> str:
-    return os.path.join(_STATE_DIR, f"cc_teacher_state_{session_id}.json")
-
-
-def _load_state(session_id: str) -> dict:
-    path = _state_path(session_id)
-    try:
-        with open(path) as f:
-            return json.load(f)
-    except (IOError, json.JSONDecodeError):
-        return {}
-
-
-def _save_state(session_id: str, state: dict):
-    path = _state_path(session_id)
-    try:
-        with open(path, "w") as f:
-            json.dump(state, f)
-    except IOError:
-        pass
+def _call_llm_bash(command: str, lang_hint: str) -> str:
+    system_prompt = (
+        f"You are a concise operations explainer shown inline in a developer's terminal. "
+        f"Write 1-2 clauses explaining what this operation does. Always produce output; never return an empty string. "
+        f"Connect clauses with commas only, never use a period or full stop anywhere in the output. "
+        f"If the operation installs or runs a named package or tool, briefly mention what it is for. "
+        f"If there is a clearly relevant canonical URL, append it directly after the last word, "
+        f"separated by a single space, no punctuation, no transition phrase before the URL. "
+        f"Only mention risk or caveats when there is a real one worth calling out. "
+        f"No bullet points, no headers, no markdown. Respond in: {lang_hint}.\n\n"
+        f"Examples of correct output:\n"
+        f"  安装 axios，一个基于 Promise 的 HTTP 客户端，用于浏览器和 Node.js 发起网络请求 https://axios-http.com\n"
+        f"  对比 schema.prisma 与数据库现状，生成并执行迁移，同时更新 Prisma Client 类型 https://www.prisma.io/docs/orm/prisma-migrate\n"
+        f"  Install axios, a Promise-based HTTP client for browsers and Node.js https://axios-http.com\n"
+        f"  Delete files and directories recursively and without confirmation prompt https://man7.org/linux/man-pages/man1/rm.1.html"
+    )
+    return _call_llm(command.strip(), lang_hint, system_prompt)
 
 
-def _is_edit_explained(session_id: str, file_path: str) -> bool:
-    """Check if this file was already blocked (Claude should have explained it)."""
-    state = _load_state(session_id)
-    ts = state.get(file_path)
-    if ts and (time.time() - ts) < 120:
-        return True
-    return False
-
-
-def _mark_edit_blocked(session_id: str, file_path: str):
-    """Record that an edit to this file was blocked for explanation."""
-    state = _load_state(session_id)
-    now = time.time()
-    state = {k: v for k, v in state.items() if now - v < 300}
-    state[file_path] = now
-    _save_state(session_id, state)
-
-
-def _clear_edit_key(session_id: str, file_path: str):
-    """Remove the key after allowing the edit."""
-    state = _load_state(session_id)
-    state.pop(file_path, None)
-    _save_state(session_id, state)
+def _call_llm_edit(file_path: str, old: str, new: str, lang_hint: str) -> str:
+    name = os.path.basename(file_path)
+    system_prompt = (
+        f"You are a concise code-change explainer shown inline in a developer's terminal. "
+        f"Write 1-2 clauses explaining what this code change does semantically. "
+        f"Always produce output; never return an empty string. "
+        f"Connect clauses with commas only, never use a period or full stop anywhere in the output. "
+        f"Focus on the intent and effect of the change, not the literal before/after strings. "
+        f"No bullet points, no headers, no markdown. Respond in: {lang_hint}.\n\n"
+        f"Examples of correct output:\n"
+        f"  去除头像的圆角，改为直角样式\n"
+        f"  将状态点颜色从绿色改为蓝色，统一在线状态的视觉风格\n"
+        f"  Remove border radius from avatar, switching to sharp corners\n"
+        f"  Add null check before accessing user.profile to prevent TypeError on unauthenticated requests"
+    )
+    old_snippet = old.strip()[:300]
+    new_snippet = new.strip()[:300]
+    operation = f"file: {name}\nbefore: {old_snippet}\nafter: {new_snippet}"
+    return _call_llm(operation, lang_hint, system_prompt)
 
 
 # ---------------------------------------------------------------------------
@@ -144,7 +110,6 @@ def _build_card(text: str) -> str:
 
 
 def _emit_bash(message: str):
-    """Emit explanation for Bash commands (inline display via systemMessage)."""
     card = _build_card(message)
     json.dump({
         "continue": True,
@@ -163,36 +128,18 @@ def _emit_bash(message: str):
     sys.stdout.write("\n")
 
 
-def _emit_edit_block(file_path: str, operation: str, lang: str):
-    """Block an edit and instruct Claude to explain first, then re-propose."""
-    lang_instruction = "用中文" if "Chinese" in lang else "in English"
-    json.dump({
-        "continue": False,
-        "hookSpecificOutput": {
-            "hookEventName": "PreToolUse",
-            "additionalContext": (
-                f"cc-teacher paused this edit to {file_path} for user awareness. "
-                f"Before re-proposing this edit, you MUST output a single line starting with '☻ ' "
-                f"followed by a 1-2 sentence explanation {lang_instruction} of what this change does. "
-                f"Then immediately re-propose the exact same edit. "
-                f"Do not apologize, do not ask for permission, just output the ☻ line then re-propose.\n\n"
-                f"Operation details:\n{operation}"
-            ),
-        },
-    }, sys.stdout, ensure_ascii=False)
-    sys.stdout.write("\n")
-
-
-def _emit_edit_allow():
-    """Allow an edit that was previously blocked and explained by Claude."""
+def _emit_edit(message: str):
+    card = _build_card(message)
     json.dump({
         "continue": True,
         "suppressOutput": False,
+        "systemMessage": f"\n{card}\n",
         "hookSpecificOutput": {
             "hookEventName": "PreToolUse",
             "additionalContext": (
-                "cc-teacher has verified this edit was explained. Proceed normally.\n"
-                "Do not repeat the explanation unless the user asks."
+                "cc-teacher has already shown the user a summary of this edit above.\n"
+                "Do not repeat or paraphrase it unless the user asks.\n"
+                f"{card}"
             ),
         },
     }, sys.stdout, ensure_ascii=False)
@@ -204,7 +151,6 @@ def _emit_edit_allow():
 # ---------------------------------------------------------------------------
 
 def _extract_edit_content(tool_name: str, tool_input: dict) -> tuple:
-    """Returns (old, new) strings for the edit."""
     if tool_name == "Write":
         return "", tool_input.get("content", "")
     if tool_name == "Edit":
@@ -227,50 +173,40 @@ def main():
     except json.JSONDecodeError:
         sys.exit(0)
 
+    hook_event = data.get("hook_event_name", "PreToolUse")
     tool_name  = data.get("tool_name", "")
     tool_input = data.get("tool_input", {})
-    session_id = data.get("session_id", "default")
 
-    if tool_name == "Bash":
+    if hook_event == "PreToolUse" and tool_name == "Bash":
         command = tool_input.get("command", "")
         if not command:
             sys.exit(0)
-        rule = classify_bash(command)
-        if not rule:
+        if not classify_bash(command):
             sys.exit(0)
 
         lang = detect_language(data)
         try:
-            text = _call_llm(command.strip(), lang)
+            text = _call_llm_bash(command.strip(), lang)
             output = text.strip() or command.strip()
         except Exception:
             output = command.strip()
         _emit_bash(output)
 
-    elif tool_name in ("Edit", "Write", "MultiEdit"):
+    elif hook_event == "PreToolUse" and tool_name in ("Edit", "Write", "MultiEdit"):
         file_path = tool_input.get("file_path", "")
         if not file_path:
             sys.exit(0)
         old_content, new_content = _extract_edit_content(tool_name, tool_input)
-        rule = classify_code(file_path, new_content)
-        if not rule:
+        if not classify_code(file_path, new_content):
             sys.exit(0)
 
-        if _is_edit_explained(session_id, file_path):
-            _clear_edit_key(session_id, file_path)
-            _emit_edit_allow()
-        else:
-            _mark_edit_blocked(session_id, file_path)
-            old_snippet = old_content[:200].strip() if old_content else ""
-            new_snippet = new_content[:200].strip() if new_content else ""
-            if old_snippet and new_snippet:
-                operation = f"{file_path}\nbefore: {old_snippet}\nafter: {new_snippet}"
-            elif new_snippet:
-                operation = f"{file_path}\n{new_snippet}"
-            else:
-                operation = file_path
-            lang = detect_language(data)
-            _emit_edit_block(file_path, operation, lang)
+        lang = detect_language(data)
+        try:
+            text = _call_llm_edit(file_path, old_content, new_content, lang)
+            output = text.strip() or os.path.basename(file_path)
+        except Exception:
+            output = os.path.basename(file_path)
+        _emit_edit(output)
 
     sys.exit(0)
 

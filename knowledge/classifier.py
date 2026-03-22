@@ -56,24 +56,8 @@ def classify_bash(command: str) -> Optional[dict]:
     if not command or not command.strip():
         return None
 
-    if "|" in command:
-        import shlex
-        try:
-            tokens = shlex.split(command)
-            segments_raw: list[str] = []
-            current: list[str] = []
-            for tok in tokens:
-                if tok == "|":
-                    segments_raw.append(" ".join(current))
-                    current = []
-                else:
-                    current.append(tok)
-            if current:
-                segments_raw.append(" ".join(current))
-            segments = [s.strip() for s in segments_raw if s.strip()]
-        except ValueError:
-            segments = [s.strip() for s in command.split("|")]
-
+    if re.search(r"[|&;]", command):
+        segments = [s.strip() for s in re.split(r"\|\|?|&&|;", command) if s.strip()]
         if all(_is_simple_bash(seg) for seg in segments):
             return None
         return _GENERIC_RULE

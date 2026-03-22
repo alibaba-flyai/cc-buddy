@@ -5,17 +5,6 @@ HOOK="python3 hooks-handlers/pre-tool-use.py"
 PASS=0
 FAIL=0
 
-# 清理上次测试留下的 state 文件
-rm -f ~/.claude/cc_teacher_state_t.json \
-       ~/.claude/cc_teacher_state_t2.json \
-       ~/.claude/cc_teacher_state_t3.json \
-       ~/.claude/cc_teacher_state_t4.json \
-       ~/.claude/cc_teacher_state_t5.json \
-       ~/.claude/cc_teacher_state_t6.json \
-       ~/.claude/cc_teacher_state_t7.json \
-       ~/.claude/cc_teacher_state_t_edit.json \
-       ~/.claude/cc_teacher_status.txt
-
 run() {
   local label="$1"
   local payload="$2"
@@ -43,14 +32,12 @@ run() {
   fi
 }
 
-# Check that output contains a specific continue value (true or false)
 run_continue() {
   local label="$1"
   local payload="$2"
   local expect_continue="$3"   # "true" | "false"
 
   result=$(echo "$payload" | $HOOK 2>/dev/null)
-  exit_code=$?
 
   if echo "$result" | grep -q "\"continue\": *$expect_continue"; then
     echo "  PASS  $label"
@@ -60,40 +47,6 @@ run_continue() {
     FAIL=$((FAIL+1))
   fi
 }
-
-echo ""
-echo "=== 应该静默 (exempted) ==="
-run "ls"           '{"session_id":"t","tool_name":"Bash","tool_input":{"command":"ls"}}' no
-run "ls -la"       '{"session_id":"t","tool_name":"Bash","tool_input":{"command":"ls -la"}}' no
-run "git status"   '{"session_id":"t","tool_name":"Bash","tool_input":{"command":"git status"}}' no
-run "cat file"     '{"session_id":"t","tool_name":"Bash","tool_input":{"command":"cat README.md"}}' no
-
-echo ""
-echo "=== Bash 应该有输出 (explained, continue=true) ==="
-run "npm install"  '{"session_id":"t2","tool_name":"Bash","tool_input":{"command":"npm install"}}' yes
-run "docker up"    '{"session_id":"t3","tool_name":"Bash","tool_input":{"command":"docker compose up -d"}}' yes
-run "rm -rf"       '{"session_id":"t4","tool_name":"Bash","tool_input":{"command":"rm -rf dist"}}' yes
-
-echo ""
-echo "=== Edit 首次应该阻止 (continue=false) ==="
-run_continue "Edit tsx block" \
-  '{"session_id":"t_edit","tool_name":"Edit","tool_input":{"file_path":"src/app.ts","old_string":"foo","new_string":"bar"}}' \
-  false
-
-echo ""
-echo "=== Edit 第二次应该放行 (continue=true) ==="
-run_continue "Edit tsx allow" \
-  '{"session_id":"t_edit","tool_name":"Edit","tool_input":{"file_path":"src/app.ts","old_string":"foo","new_string":"bar"}}' \
-  true
-
-echo ""
-echo "=== Edit 简单文件应该静默 ==="
-run "Edit .md file" \
-  '{"session_id":"t5","tool_name":"Edit","tool_input":{"file_path":"README.md","old_string":"foo","new_string":"bar"}}' \
-  no
-
-echo ""
-echo "=== Bash 不应包含 permissionDecision ==="
 
 run_no_permission() {
   local label="$1"
@@ -108,21 +61,43 @@ run_no_permission() {
   fi
 }
 
+echo ""
+echo "=== 应该静默 (exempted) ==="
+run "ls"           '{"session_id":"t","tool_name":"Bash","tool_input":{"command":"ls"}}' no
+run "ls -la"       '{"session_id":"t","tool_name":"Bash","tool_input":{"command":"ls -la"}}' no
+run "git status"   '{"session_id":"t","tool_name":"Bash","tool_input":{"command":"git status"}}' no
+run "cat file"     '{"session_id":"t","tool_name":"Bash","tool_input":{"command":"cat README.md"}}' no
+
+echo ""
+echo "=== Bash 应该有输出 (explained, continue=true) ==="
+run "npm install"  '{"session_id":"t","tool_name":"Bash","tool_input":{"command":"npm install"}}' yes
+run "docker up"    '{"session_id":"t","tool_name":"Bash","tool_input":{"command":"docker compose up -d"}}' yes
+run "rm -rf"       '{"session_id":"t","tool_name":"Bash","tool_input":{"command":"rm -rf dist"}}' yes
+
+echo ""
+echo "=== Edit 应该输出说明 (continue=true, systemMessage) ==="
+run_continue "Edit tsx explain" \
+  '{"session_id":"t","tool_name":"Edit","tool_input":{"file_path":"src/app.ts","old_string":"foo","new_string":"bar"}}' \
+  true
+
+echo ""
+echo "=== Edit 简单文件应该静默 ==="
+run "Edit .md file" \
+  '{"session_id":"t","tool_name":"Edit","tool_input":{"file_path":"README.md","old_string":"foo","new_string":"bar"}}' \
+  no
+
+echo ""
+echo "=== Bash 不应包含 permissionDecision ==="
 run_no_permission "Bash no permissionDecision" \
-  '{"session_id":"t6","tool_name":"Bash","tool_input":{"command":"pip install flask"}}'
+  '{"session_id":"t","tool_name":"Bash","tool_input":{"command":"pip install flask"}}'
+
+echo ""
+echo "=== && 复合命令应该有输出 ==="
+run_continue "cd && rm explain" \
+  '{"session_id":"t","tool_name":"Bash","tool_input":{"command":"cd /tmp && rm -rf dist"}}' \
+  true
 
 echo ""
 echo "=== 结果 ==="
 echo "  通过: $PASS  失败: $FAIL"
 echo ""
-
-# 清理本次测试生成的 state 文件
-rm -f ~/.claude/cc_teacher_state_t.json \
-       ~/.claude/cc_teacher_state_t2.json \
-       ~/.claude/cc_teacher_state_t3.json \
-       ~/.claude/cc_teacher_state_t4.json \
-       ~/.claude/cc_teacher_state_t5.json \
-       ~/.claude/cc_teacher_state_t6.json \
-       ~/.claude/cc_teacher_state_t7.json \
-       ~/.claude/cc_teacher_state_t_edit.json \
-       ~/.claude/cc_teacher_status.txt
