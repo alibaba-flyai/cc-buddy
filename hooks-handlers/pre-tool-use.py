@@ -172,9 +172,10 @@ def _emit_edit_block(file_path: str, operation: str, lang: str):
             "hookEventName": "PreToolUse",
             "additionalContext": (
                 f"cc-teacher paused this edit to {file_path} for user awareness. "
-                f"Before re-proposing this edit, you MUST explain {lang_instruction} in 1-2 concise sentences "
-                f"what this change does and why. Then immediately re-propose the exact same edit. "
-                f"Do not apologize, do not ask for permission, just explain then re-propose.\n\n"
+                f"Before re-proposing this edit, you MUST output a single line starting with '☻ ' "
+                f"followed by a 1-2 sentence explanation {lang_instruction} of what this change does. "
+                f"Then immediately re-propose the exact same edit. "
+                f"Do not apologize, do not ask for permission, just output the ☻ line then re-propose.\n\n"
                 f"Operation details:\n{operation}"
             ),
         },
