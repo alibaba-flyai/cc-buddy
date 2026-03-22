@@ -9,10 +9,8 @@
 
 ## What this project is
 
-A Claude Code plugin with a `PreToolUse` hook. For Bash commands, it calls an external LLM and
-shows the explanation inline via `systemMessage`. For Edit/Write/MultiEdit operations, it blocks
-the first attempt and instructs Claude to explain the change, then allows the re-proposed edit
-so the explanation appears above the diff dialog (no external API call needed for edits).
+A Claude Code plugin with a `PreToolUse` hook. For both Bash commands and Edit/Write/MultiEdit
+operations, it calls an external LLM and shows a concise explanation inline via `systemMessage`.
 The exemption list lives in `knowledge/classifier.py`; shared LLM config in `knowledge/llm_client.py`.
 
 ## Critical rules
@@ -63,7 +61,7 @@ claude plugins validate .
 |---|---|
 | `knowledge/classifier.py` | Exemption list only -- add patterns here to silence over-eager LLM explanations |
 | `knowledge/llm_client.py` | Shared LLM config, `get_api_key()`, `detect_language()` |
-| `hooks-handlers/pre-tool-use.py` | PreToolUse hook: Bash uses external LLM + systemMessage; Edit uses block/explain/re-propose flow |
+| `hooks-handlers/pre-tool-use.py` | PreToolUse hook: Bash and Edit/Write/MultiEdit both call external LLM and show explanation via systemMessage |
 | `hooks/hooks.json` | Hook handler declarations (uses CLAUDE_PLUGIN_ROOT, not relied on for local installs) |
 | `test.sh` | Local test runner -- validates exempted and explained commands without installing the plugin |
 | `.claude-plugin/plugin.json` | Plugin manifest consumed by Claude Code |
