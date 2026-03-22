@@ -64,7 +64,7 @@ exit 0   ┌──┴──────────┐
 ## Update
 
 ```bash
-claude plugins marketplace update flyai && claude plugins update cc-teacher@flyai
+claude plugins update cc-teacher@flyai
 ```
 
 Then open a new Claude Code window to apply the update.
