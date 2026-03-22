@@ -57,9 +57,9 @@ run "rm -rf"       '{"session_id":"t4","tool_name":"Bash","tool_input":{"command
 run "Edit tsx"     '{"session_id":"t5","tool_name":"Edit","tool_input":{"file_path":"src/app.ts","old_string":"foo","new_string":"bar"}}' yes
 
 echo ""
-echo "=== Edit 路径不应包含 permissionDecision ==="
+echo "=== 不应包含 permissionDecision (统一 status line) ==="
 
-run_edit_no_permission() {
+run_no_permission() {
   local label="$1"
   local payload="$2"
   result=$(echo "$payload" | $HOOK 2>/dev/null)
@@ -72,11 +72,11 @@ run_edit_no_permission() {
   fi
 }
 
-run_edit_no_permission "Edit no permissionDecision" \
-  '{"session_id":"t6","tool_name":"Edit","tool_input":{"file_path":"src/app.ts","old_string":"foo","new_string":"bar"}}'
+run_no_permission "Bash no permissionDecision" \
+  '{"session_id":"t6","tool_name":"Bash","tool_input":{"command":"pip install flask"}}'
 
-run_edit_no_permission "Write no permissionDecision" \
-  '{"session_id":"t7","tool_name":"Write","tool_input":{"file_path":"src/new.ts","content":"console.log(1)"}}'
+run_no_permission "Edit no permissionDecision" \
+  '{"session_id":"t7","tool_name":"Edit","tool_input":{"file_path":"src/app.ts","old_string":"foo","new_string":"bar"}}'
 
 echo ""
 echo "=== 结果 ==="

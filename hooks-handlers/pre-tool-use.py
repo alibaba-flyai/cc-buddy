@@ -2,26 +2,21 @@
 """
 cc-teacher PreToolUse hook.
 
-On first encounter of a non-trivial operation:
+For non-trivial operations:
   - Calls an LLM API to generate a contextual explanation.
-  - Returns a structured allow decision with a user-facing warning message.
+  - Writes the explanation to a status file for the status line.
+  - Returns a structured allow decision with a user-facing message.
   - The tool call continues without interruption.
-
-On subsequent encounters within the same session: exits 0 (no interruption).
 """
 
-import hashlib
 import json
 import os
-import random
-import re
 import shutil
 import sys
 import tempfile
 import textwrap
 import time
 import urllib.request
-from datetime import datetime
 
 _PLUGIN_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, _PLUGIN_ROOT)
@@ -32,70 +27,7 @@ from knowledge.llm_client import LLM_API_URL, LLM_MODEL, LLM_TIMEOUT, get_api_ke
 ACCENT = "\033[38;2;217;121;89m"
 RESET = "\033[0m"
 
-_EDIT_TOOLS = {"Edit", "Write", "MultiEdit"}
 _STATUS_FILE = os.path.expanduser("~/.claude/cc_teacher_status.txt")
-
-
-# ---------------------------------------------------------------------------
-# Session state
-# ---------------------------------------------------------------------------
-
-def _state_file(session_id: str) -> str:
-    return os.path.expanduser(f"~/.claude/cc_teacher_state_{session_id}.json")
-
-
-def _session_key(data: dict) -> str:
-    session_id = str(data.get("session_id", "")).strip()
-    if session_id:
-        return re.sub(r"[^A-Za-z0-9._-]", "_", session_id)
-
-    transcript_path = str(data.get("transcript_path", "")).strip()
-    if transcript_path:
-        digest = hashlib.sha256(transcript_path.encode()).hexdigest()[:16]
-        return f"transcript_{digest}"
-
-    return "default"
-
-
-def _normalize_command_for_key(command: str) -> str:
-    return " ".join(command.strip().split())
-
-
-def _cleanup_old_states():
-    try:
-        state_dir = os.path.expanduser("~/.claude")
-        cutoff = datetime.now().timestamp() - 30 * 24 * 3600
-        for fname in os.listdir(state_dir):
-            if fname.startswith("cc_teacher_state_") and fname.endswith(".json"):
-                fpath = os.path.join(state_dir, fname)
-                try:
-                    if os.path.getmtime(fpath) < cutoff:
-                        os.remove(fpath)
-                except (OSError, IOError):
-                    pass
-    except Exception:
-        pass
-
-
-def _load_state(session_id: str) -> set:
-    path = _state_file(session_id)
-    if os.path.exists(path):
-        try:
-            with open(path) as f:
-                return set(json.load(f))
-        except (json.JSONDecodeError, IOError):
-            pass
-    return set()
-
-
-def _save_state(session_id: str, keys: set):
-    path = _state_file(session_id)
-    try:
-        os.makedirs(os.path.dirname(path), exist_ok=True)
-        with open(path, "w") as f:
-            json.dump(list(keys), f)
-    except IOError:
-        pass
 
 
 # ---------------------------------------------------------------------------
@@ -149,12 +81,10 @@ def _call_llm(operation: str, lang_hint: str) -> str:
 
 
 # ---------------------------------------------------------------------------
-# Output formatting
+# Output formatting and status line
 # ---------------------------------------------------------------------------
 
 def _build_card(text: str) -> str:
-    # Pre-wrap so Claude Code's systemMessage renderer doesn't re-wrap with its own indentation.
-    # Chinese chars are ~2 columns wide, so use a conservative width.
     lines = textwrap.wrap(text.strip(), width=88, break_long_words=False, break_on_hyphens=False)
     if not lines:
         return ""
@@ -216,7 +146,7 @@ def _ensure_status_line_script():
         pass
 
 
-def _emit_allow_message(message: str, tool_name: str = "Bash"):
+def _emit(message: str):
     card = _build_card(message)
     additional_context = (
         "cc-teacher has already explained this operation to the user.\n"
@@ -225,26 +155,17 @@ def _emit_allow_message(message: str, tool_name: str = "Bash"):
         f"{card}"
     )
 
-    if tool_name in _EDIT_TOOLS:
-        _write_status_file(message)
-        _ensure_status_line_script()
-        hook_output: dict = {
-            "hookEventName": "PreToolUse",
-            "additionalContext": additional_context,
-        }
-    else:
-        hook_output = {
-            "hookEventName": "PreToolUse",
-            "additionalContext": additional_context,
-            "permissionDecision": "ask",
-            "permissionDecisionReason": message,
-        }
+    _write_status_file(message)
+    _ensure_status_line_script()
 
     json.dump({
         "continue": True,
         "suppressOutput": False,
         "systemMessage": f"\n{card}\n",
-        "hookSpecificOutput": hook_output,
+        "hookSpecificOutput": {
+            "hookEventName": "PreToolUse",
+            "additionalContext": additional_context,
+        },
     }, sys.stdout, ensure_ascii=False)
     sys.stdout.write("\n")
 
@@ -272,21 +193,16 @@ def _extract_edit_content(tool_name: str, tool_input: dict) -> tuple:
 # ---------------------------------------------------------------------------
 
 def main():
-    if random.random() < 0.2:
-        _cleanup_old_states()
-
     try:
         data = json.loads(sys.stdin.read())
     except json.JSONDecodeError:
         sys.exit(0)
 
-    session_id = _session_key(data)
     tool_name  = data.get("tool_name", "")
     tool_input = data.get("tool_input", {})
 
-    rule        = None
-    warning_key = None
-    operation   = ""
+    rule      = None
+    operation = ""
 
     if tool_name == "Bash":
         command = tool_input.get("command", "")
@@ -294,7 +210,6 @@ def main():
             sys.exit(0)
         rule = classify_bash(command)
         if rule:
-            warning_key = f"Bash:{_normalize_command_for_key(command)}"
             operation = command.strip()
 
     elif tool_name in ("Edit", "Write", "MultiEdit"):
@@ -304,8 +219,6 @@ def main():
         old_content, new_content = _extract_edit_content(tool_name, tool_input)
         rule = classify_code(file_path, new_content)
         if rule:
-            content_hash = hashlib.md5((new_content or "").encode()).hexdigest()[:8]
-            warning_key = f"{tool_name}:{file_path}:{content_hash}"
             old_snippet = old_content[:200].strip() if old_content else ""
             new_snippet = new_content[:200].strip() if new_content else ""
             if old_snippet and new_snippet:
@@ -315,7 +228,7 @@ def main():
             else:
                 operation = file_path
 
-    if not rule or not warning_key:
+    if not rule or not operation:
         sys.exit(0)
 
     lang = detect_language(data)
@@ -326,7 +239,7 @@ def main():
     except Exception:
         output = operation
 
-    _emit_allow_message(output, tool_name)
+    _emit(output)
     sys.exit(0)
 
 

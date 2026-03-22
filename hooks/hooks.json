@@ -12,17 +12,6 @@
         ]
       }
     ],
-    "PermissionRequest": [
-      {
-        "matcher": "Bash|Edit|Write|MultiEdit",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "[ -f \"${CLAUDE_PLUGIN_ROOT}/hooks-handlers/permission-request.py\" ] && python3 \"${CLAUDE_PLUGIN_ROOT}/hooks-handlers/permission-request.py\" || true",
-            "timeout": 40
-          }
-        ]
-      }
-    ]
+    "PermissionRequest": []
   }
 }
