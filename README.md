@@ -17,7 +17,8 @@ It runs as a `PreToolUse` hook. For both shell commands and file edits, it calls
 ## Installation
 
 ```bash
-claude plugins marketplace add alibaba-flyai/cc-teacher && claude plugins install cc-teacher@flyai
+claude plugins marketplace add alibaba-flyai/cc-teacher
+claude plugins install cc-teacher@flyai
 ```
 
 Then open a new Claude Code window to activate.
@@ -64,6 +65,7 @@ exit 0   ┌──┴──────────┐
 ## Update
 
 ```bash
+claude plugins marketplace update flyai
 claude plugins update cc-teacher@flyai
 ```
 
