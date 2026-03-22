@@ -12,7 +12,7 @@
 
 cc-teacher adds lightweight guidance to Claude Code at the moment an operation is about to run. It is meant for cases where the tool call is valid, but the builder may not immediately understand what it does or why it matters.
 
-It runs as a `PreToolUse` hook. For shell commands, it calls an LLM and shows the explanation inline. For file edits, it pauses the edit and instructs Claude to explain the change first, then re-proposes the same edit so the explanation appears above the diff dialog. Typical cases include Docker, CI workflows, Next.js files, Prisma commands, `.env` files, package installation, and riskier shell commands such as `sudo`, `rm -rf`, or `git push --force`. Trivially obvious operations like `ls`, `cat`, and `git status` are skipped.
+It runs as a `PreToolUse` hook. For both shell commands and file edits, it calls an LLM and shows a concise explanation inline before the operation runs. Typical cases include Docker, CI workflows, Next.js files, Prisma commands, `.env` files, package installation, and riskier shell commands such as `sudo`, `rm -rf`, or `git push --force`. Trivially obvious operations like `ls`, `cat`, and `git status` are skipped.
 
 ## Installation
 
@@ -53,14 +53,12 @@ exit 0   ┌──┴──────────┐
 (skip)   │             │
        Bash         Edit/Write
          │             │
-      call LLM     block edit
-         │         (continue=false)
-    systemMessage      │
-         │         Claude explains
-    exit 0         then re-proposes
-    (allow)            │
-                  hook allows
-                  (continue=true)
+      call LLM      call LLM
+         │             │
+    systemMessage  systemMessage
+         │             │
+    exit 0         exit 0
+    (allow)        (allow)
 ```
 
 ## Update
