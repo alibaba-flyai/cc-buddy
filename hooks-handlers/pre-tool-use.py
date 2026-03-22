@@ -2,18 +2,19 @@
 """
 cc-teacher PreToolUse hook.
 
-For non-trivial operations:
-  - Calls an LLM API to generate a contextual explanation.
-  - Writes the explanation to a status file for the status line.
-  - Returns a structured allow decision with a user-facing message.
-  - The tool call continues without interruption.
+For Bash commands:
+  - Calls an external LLM to generate a contextual explanation.
+  - Shows the explanation inline via systemMessage.
+
+For Edit/Write/MultiEdit operations:
+  - First attempt: blocks the edit, instructs Claude to explain first.
+  - Second attempt (after Claude explains): allows the edit to proceed.
+  - No external API call needed; Claude explains using its own intelligence.
 """
 
 import json
 import os
-import shutil
 import sys
-import tempfile
 import textwrap
 import time
 import urllib.request
@@ -27,11 +28,11 @@ from knowledge.llm_client import LLM_API_URL, LLM_MODEL, LLM_TIMEOUT, get_api_ke
 ACCENT = "\033[38;2;217;121;89m"
 RESET = "\033[0m"
 
-_STATUS_FILE = os.path.expanduser("~/.claude/cc_teacher_status.txt")
+_STATE_DIR = os.path.expanduser("~/.claude")
 
 
 # ---------------------------------------------------------------------------
-# LLM call
+# LLM call (Bash only)
 # ---------------------------------------------------------------------------
 
 def _call_llm(operation: str, lang_hint: str) -> str:
@@ -42,10 +43,10 @@ def _call_llm(operation: str, lang_hint: str) -> str:
     system_prompt = (
         f"You are a concise operations explainer shown inline in a developer's terminal. "
         f"Write 1-2 clauses explaining what this operation does. Always produce output; never return an empty string. "
-        f"Connect clauses with commas only — never use a period or full stop anywhere in the output. "
+        f"Connect clauses with commas only, never use a period or full stop anywhere in the output. "
         f"If the operation installs or runs a named package or tool, briefly mention what it is for. "
         f"If there is a clearly relevant canonical URL, append it directly after the last word, "
-        f"separated by a single space — no punctuation, no transition phrase before the URL. "
+        f"separated by a single space, no punctuation, no transition phrase before the URL. "
         f"Only mention risk or caveats when there is a real one worth calling out. "
         f"No bullet points, no headers, no markdown. Respond in: {lang_hint}.\n\n"
         f"Examples of correct output:\n"
@@ -81,7 +82,58 @@ def _call_llm(operation: str, lang_hint: str) -> str:
 
 
 # ---------------------------------------------------------------------------
-# Output formatting and status line
+# Edit state management
+# ---------------------------------------------------------------------------
+
+def _state_path(session_id: str) -> str:
+    return os.path.join(_STATE_DIR, f"cc_teacher_state_{session_id}.json")
+
+
+def _load_state(session_id: str) -> dict:
+    path = _state_path(session_id)
+    try:
+        with open(path) as f:
+            return json.load(f)
+    except (IOError, json.JSONDecodeError):
+        return {}
+
+
+def _save_state(session_id: str, state: dict):
+    path = _state_path(session_id)
+    try:
+        with open(path, "w") as f:
+            json.dump(state, f)
+    except IOError:
+        pass
+
+
+def _is_edit_explained(session_id: str, file_path: str) -> bool:
+    """Check if this file was already blocked (Claude should have explained it)."""
+    state = _load_state(session_id)
+    ts = state.get(file_path)
+    if ts and (time.time() - ts) < 120:
+        return True
+    return False
+
+
+def _mark_edit_blocked(session_id: str, file_path: str):
+    """Record that an edit to this file was blocked for explanation."""
+    state = _load_state(session_id)
+    now = time.time()
+    state = {k: v for k, v in state.items() if now - v < 300}
+    state[file_path] = now
+    _save_state(session_id, state)
+
+
+def _clear_edit_key(session_id: str, file_path: str):
+    """Remove the key after allowing the edit."""
+    state = _load_state(session_id)
+    state.pop(file_path, None)
+    _save_state(session_id, state)
+
+
+# ---------------------------------------------------------------------------
+# Output
 # ---------------------------------------------------------------------------
 
 def _build_card(text: str) -> str:
@@ -91,80 +143,56 @@ def _build_card(text: str) -> str:
     return f"{ACCENT}☻{RESET} " + "\n  ".join(lines)
 
 
-def _write_status_file(message: str):
-    """Write explanation to status file for status line display."""
-    try:
-        content = f"{int(time.time())}\n{message}\n"
-        fd, tmp_path = tempfile.mkstemp(
-            dir=os.path.expanduser("~/.claude"),
-            prefix="cc_teacher_status_tmp_",
-        )
-        try:
-            os.write(fd, content.encode("utf-8"))
-            os.close(fd)
-            os.rename(tmp_path, _STATUS_FILE)
-        except Exception:
-            try:
-                os.close(fd)
-            except OSError:
-                pass
-            try:
-                os.unlink(tmp_path)
-            except OSError:
-                pass
-    except Exception:
-        pass
-
-
-def _ensure_status_line_script():
-    """Copy status-line.sh to ~/.claude/ and auto-configure statusLine in settings.json."""
-    target = os.path.expanduser("~/.claude/cc-teacher-status-line.sh")
-    source = os.path.join(_PLUGIN_ROOT, "hooks-handlers", "status-line.sh")
-    try:
-        if not (os.path.exists(target) and os.path.getmtime(target) >= os.path.getmtime(source)):
-            shutil.copy2(source, target)
-    except Exception:
-        pass
-
-    settings_path = os.path.expanduser("~/.claude/settings.json")
-    expected_cmd = f"bash {target}"
-    try:
-        settings: dict = {}
-        if os.path.exists(settings_path):
-            with open(settings_path) as f:
-                settings = json.load(f)
-        current = settings.get("statusLine")
-        if isinstance(current, dict) and current.get("command") == expected_cmd:
-            return
-        if current is not None:
-            return
-        settings["statusLine"] = {"type": "command", "command": expected_cmd}
-        with open(settings_path, "w") as f:
-            json.dump(settings, f, indent=2, ensure_ascii=False)
-            f.write("\n")
-    except Exception:
-        pass
-
-
-def _emit(message: str):
+def _emit_bash(message: str):
+    """Emit explanation for Bash commands (inline display via systemMessage)."""
     card = _build_card(message)
-    additional_context = (
-        "cc-teacher has already explained this operation to the user.\n"
-        "Do not repeat or paraphrase that explanation unless the user asks for it.\n"
-        "Focus on the actual tool result.\n\n"
-        f"{card}"
-    )
-
-    _write_status_file(message)
-    _ensure_status_line_script()
-
     json.dump({
         "continue": True,
         "suppressOutput": False,
         "systemMessage": f"\n{card}\n",
         "hookSpecificOutput": {
             "hookEventName": "PreToolUse",
-            "additionalContext": additional_context,
+            "additionalContext": (
+                "cc-teacher has already explained this operation to the user.\n"
+                "Do not repeat or paraphrase that explanation unless the user asks for it.\n"
+                "Focus on the actual tool result.\n\n"
+                f"{card}"
+            ),
+        },
+    }, sys.stdout, ensure_ascii=False)
+    sys.stdout.write("\n")
+
+
+def _emit_edit_block(file_path: str, operation: str, lang: str):
+    """Block an edit and instruct Claude to explain first, then re-propose."""
+    lang_instruction = "用中文" if "Chinese" in lang else "in English"
+    json.dump({
+        "continue": False,
+        "hookSpecificOutput": {
+            "hookEventName": "PreToolUse",
+            "additionalContext": (
+                f"cc-teacher paused this edit to {file_path} for user awareness. "
+                f"Before re-proposing this edit, you MUST explain {lang_instruction} in 1-2 concise sentences "
+                f"what this change does and why. Then immediately re-propose the exact same edit. "
+                f"Do not apologize, do not ask for permission, just explain then re-propose.\n\n"
+                f"Operation details:\n{operation}"
+            ),
+        },
+    }, sys.stdout, ensure_ascii=False)
+    sys.stdout.write("\n")
+
+
+def _emit_edit_allow():
+    """Allow an edit that was previously blocked and explained by Claude."""
+    json.dump({
+        "continue": True,
+        "suppressOutput": False,
+        "hookSpecificOutput": {
+            "hookEventName": "PreToolUse",
+            "additionalContext": (
+                "cc-teacher has verified this edit was explained. Proceed normally.\n"
+                "Do not repeat the explanation unless the user asks."
+            ),
         },
     }, sys.stdout, ensure_ascii=False)
     sys.stdout.write("\n")
@@ -200,17 +228,23 @@ def main():
 
     tool_name  = data.get("tool_name", "")
     tool_input = data.get("tool_input", {})
-
-    rule      = None
-    operation = ""
+    session_id = data.get("session_id", "default")
 
     if tool_name == "Bash":
         command = tool_input.get("command", "")
         if not command:
             sys.exit(0)
         rule = classify_bash(command)
-        if rule:
-            operation = command.strip()
+        if not rule:
+            sys.exit(0)
+
+        lang = detect_language(data)
+        try:
+            text = _call_llm(command.strip(), lang)
+            output = text.strip() or command.strip()
+        except Exception:
+            output = command.strip()
+        _emit_bash(output)
 
     elif tool_name in ("Edit", "Write", "MultiEdit"):
         file_path = tool_input.get("file_path", "")
@@ -218,7 +252,14 @@ def main():
             sys.exit(0)
         old_content, new_content = _extract_edit_content(tool_name, tool_input)
         rule = classify_code(file_path, new_content)
-        if rule:
+        if not rule:
+            sys.exit(0)
+
+        if _is_edit_explained(session_id, file_path):
+            _clear_edit_key(session_id, file_path)
+            _emit_edit_allow()
+        else:
+            _mark_edit_blocked(session_id, file_path)
             old_snippet = old_content[:200].strip() if old_content else ""
             new_snippet = new_content[:200].strip() if new_content else ""
             if old_snippet and new_snippet:
@@ -227,19 +268,9 @@ def main():
                 operation = f"{file_path}\n{new_snippet}"
             else:
                 operation = file_path
+            lang = detect_language(data)
+            _emit_edit_block(file_path, operation, lang)
 
-    if not rule or not operation:
-        sys.exit(0)
-
-    lang = detect_language(data)
-
-    try:
-        text = _call_llm(operation, lang)
-        output = text.strip() or operation
-    except Exception:
-        output = operation
-
-    _emit(output)
     sys.exit(0)
 
 

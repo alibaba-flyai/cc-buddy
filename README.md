@@ -12,7 +12,7 @@
 
 cc-teacher adds lightweight guidance to Claude Code at the moment an operation is about to run. It is meant for cases where the tool call is valid, but the builder may not immediately understand what it does or why it matters.
 
-It runs as a `PreToolUse` hook, explains non-trivial operations in one short line via the status line at the bottom of Claude Code, then lets execution continue. Typical cases include Docker, CI workflows, Next.js files, Prisma commands, `.env` files, package installation, and riskier shell commands such as `sudo`, `rm -rf`, or `git push --force`. Trivially obvious operations like `ls`, `cat`, and `git status` are skipped without an LLM call.
+It runs as a `PreToolUse` hook. For shell commands, it calls an LLM and shows the explanation inline. For file edits, it pauses the edit and instructs Claude to explain the change first, then re-proposes the same edit so the explanation appears above the diff dialog. Typical cases include Docker, CI workflows, Next.js files, Prisma commands, `.env` files, package installation, and riskier shell commands such as `sudo`, `rm -rf`, or `git push --force`. Trivially obvious operations like `ls`, `cat`, and `git status` are skipped.
 
 ## Installation
 
@@ -47,15 +47,20 @@ Claude runs a tool
        │
   ┌────┴─────┐
   │          │
-exempt    everything else
+exempt    needs explanation
   │          │
-exit 0     call LLM
-(skip)         │
-           explanation
-               │
-        status line + systemMessage
-               │
-           exit 0 (allow)
+exit 0   ┌──┴──────────┐
+(skip)   │             │
+       Bash         Edit/Write
+         │             │
+      call LLM     block edit
+         │         (continue=false)
+    systemMessage      │
+         │         Claude explains
+    exit 0         then re-proposes
+    (allow)            │
+                  hook allows
+                  (continue=true)
 ```
 
 ## Update
@@ -99,7 +104,6 @@ Main files:
 knowledge/classifier.py              exemption list
 knowledge/llm_client.py              shared LLM config and helpers
 hooks-handlers/pre-tool-use.py       PreToolUse hook runtime
-hooks-handlers/status-line.sh        status line display script
 hooks/hooks.json                     hook declarations
 ```
 
