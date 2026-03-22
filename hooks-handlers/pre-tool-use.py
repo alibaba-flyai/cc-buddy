@@ -15,8 +15,11 @@ import json
 import os
 import random
 import re
+import shutil
 import sys
+import tempfile
 import textwrap
+import time
 import urllib.request
 from datetime import datetime
 
@@ -28,6 +31,9 @@ from knowledge.llm_client import LLM_API_URL, LLM_MODEL, LLM_TIMEOUT, get_api_ke
 
 ACCENT = "\033[38;2;217;121;89m"
 RESET = "\033[0m"
+
+_EDIT_TOOLS = {"Edit", "Write", "MultiEdit"}
+_STATUS_FILE = os.path.expanduser("~/.claude/cc_teacher_status.txt")
 
 
 # ---------------------------------------------------------------------------
@@ -155,6 +161,61 @@ def _build_card(text: str) -> str:
     return f"{ACCENT}☻{RESET} " + "\n  ".join(lines)
 
 
+def _write_status_file(message: str):
+    """Write explanation to status file for status line display."""
+    try:
+        content = f"{int(time.time())}\n{message}\n"
+        fd, tmp_path = tempfile.mkstemp(
+            dir=os.path.expanduser("~/.claude"),
+            prefix="cc_teacher_status_tmp_",
+        )
+        try:
+            os.write(fd, content.encode("utf-8"))
+            os.close(fd)
+            os.rename(tmp_path, _STATUS_FILE)
+        except Exception:
+            try:
+                os.close(fd)
+            except OSError:
+                pass
+            try:
+                os.unlink(tmp_path)
+            except OSError:
+                pass
+    except Exception:
+        pass
+
+
+def _ensure_status_line_script():
+    """Copy status-line.sh to ~/.claude/ and auto-configure statusLine in settings.json."""
+    target = os.path.expanduser("~/.claude/cc-teacher-status-line.sh")
+    source = os.path.join(_PLUGIN_ROOT, "hooks-handlers", "status-line.sh")
+    try:
+        if not (os.path.exists(target) and os.path.getmtime(target) >= os.path.getmtime(source)):
+            shutil.copy2(source, target)
+    except Exception:
+        pass
+
+    settings_path = os.path.expanduser("~/.claude/settings.json")
+    expected_cmd = f"bash {target}"
+    try:
+        settings: dict = {}
+        if os.path.exists(settings_path):
+            with open(settings_path) as f:
+                settings = json.load(f)
+        current = settings.get("statusLine")
+        if isinstance(current, dict) and current.get("command") == expected_cmd:
+            return
+        if current is not None:
+            return
+        settings["statusLine"] = {"type": "command", "command": expected_cmd}
+        with open(settings_path, "w") as f:
+            json.dump(settings, f, indent=2, ensure_ascii=False)
+            f.write("\n")
+    except Exception:
+        pass
+
+
 def _emit_allow_message(message: str, tool_name: str = "Bash"):
     card = _build_card(message)
     additional_context = (
@@ -163,12 +224,22 @@ def _emit_allow_message(message: str, tool_name: str = "Bash"):
         "Focus on the actual tool result.\n\n"
         f"{card}"
     )
-    hook_output: dict = {
-        "hookEventName": "PreToolUse",
-        "additionalContext": additional_context,
-        "permissionDecision": "ask",
-        "permissionDecisionReason": message,
-    }
+
+    if tool_name in _EDIT_TOOLS:
+        _write_status_file(message)
+        _ensure_status_line_script()
+        hook_output: dict = {
+            "hookEventName": "PreToolUse",
+            "additionalContext": additional_context,
+        }
+    else:
+        hook_output = {
+            "hookEventName": "PreToolUse",
+            "additionalContext": additional_context,
+            "permissionDecision": "ask",
+            "permissionDecisionReason": message,
+        }
+
     json.dump({
         "continue": True,
         "suppressOutput": False,

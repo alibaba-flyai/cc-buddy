@@ -10,7 +10,10 @@ rm -f ~/.claude/cc_teacher_state_t.json \
        ~/.claude/cc_teacher_state_t2.json \
        ~/.claude/cc_teacher_state_t3.json \
        ~/.claude/cc_teacher_state_t4.json \
-       ~/.claude/cc_teacher_state_t5.json
+       ~/.claude/cc_teacher_state_t5.json \
+       ~/.claude/cc_teacher_state_t6.json \
+       ~/.claude/cc_teacher_state_t7.json \
+       ~/.claude/cc_teacher_status.txt
 
 run() {
   local label="$1"
@@ -54,6 +57,28 @@ run "rm -rf"       '{"session_id":"t4","tool_name":"Bash","tool_input":{"command
 run "Edit tsx"     '{"session_id":"t5","tool_name":"Edit","tool_input":{"file_path":"src/app.ts","old_string":"foo","new_string":"bar"}}' yes
 
 echo ""
+echo "=== Edit 路径不应包含 permissionDecision ==="
+
+run_edit_no_permission() {
+  local label="$1"
+  local payload="$2"
+  result=$(echo "$payload" | $HOOK 2>/dev/null)
+  if echo "$result" | grep -q '"continue"' && ! echo "$result" | grep -q '"permissionDecision"'; then
+    echo "  PASS  $label"
+    PASS=$((PASS+1))
+  else
+    echo "  FAIL  $label (got: $result)"
+    FAIL=$((FAIL+1))
+  fi
+}
+
+run_edit_no_permission "Edit no permissionDecision" \
+  '{"session_id":"t6","tool_name":"Edit","tool_input":{"file_path":"src/app.ts","old_string":"foo","new_string":"bar"}}'
+
+run_edit_no_permission "Write no permissionDecision" \
+  '{"session_id":"t7","tool_name":"Write","tool_input":{"file_path":"src/new.ts","content":"console.log(1)"}}'
+
+echo ""
 echo "=== 结果 ==="
 echo "  通过: $PASS  失败: $FAIL"
 echo ""
@@ -63,4 +88,7 @@ rm -f ~/.claude/cc_teacher_state_t.json \
        ~/.claude/cc_teacher_state_t2.json \
        ~/.claude/cc_teacher_state_t3.json \
        ~/.claude/cc_teacher_state_t4.json \
-       ~/.claude/cc_teacher_state_t5.json
+       ~/.claude/cc_teacher_state_t5.json \
+       ~/.claude/cc_teacher_state_t6.json \
+       ~/.claude/cc_teacher_state_t7.json \
+       ~/.claude/cc_teacher_status.txt
