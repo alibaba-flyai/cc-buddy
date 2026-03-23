@@ -28,7 +28,7 @@ A Claude Code plugin with a single `SessionStart` hook. It injects `additionalCo
 
 ```bash
 # Run the SessionStart hook manually
-echo '{"session_id":"dev"}' | python3 hooks-handlers/session-start.py
+bash hooks-handlers/session-start.sh
 
 # Run test suite
 bash test.sh
@@ -41,15 +41,14 @@ claude plugins validate .
 
 | Task | Command | Pass condition |
 |---|---|---|
-| Syntax check | `python3 -m py_compile hooks-handlers/session-start.py` | No output |
-| SessionStart hook | `echo '{"session_id":"x"}' \| python3 hooks-handlers/session-start.py \| python3 -c "import sys,json; print('ok' if 'additionalContext' in json.load(sys.stdin).get('hookSpecificOutput','') else 'fail')"` | ok |
+| SessionStart hook | `bash hooks-handlers/session-start.sh \| python3 -c "import sys,json; print('ok' if 'additionalContext' in json.load(sys.stdin).get('hookSpecificOutput','') else 'fail')"` | ok |
 | Full test suite | `bash test.sh` | 通过: 10  失败: 0 |
 
 ## File map
 
 | File | Purpose |
 |---|---|
-| `hooks-handlers/session-start.py` | SessionStart hook: injects additionalContext so Claude explains operations before executing |
+| `hooks-handlers/session-start.sh` | SessionStart hook: injects additionalContext so Claude explains operations before executing |
 | `hooks/hooks.json` | Hook handler declarations |
 | `test.sh` | Local test runner |
 | `.claude-plugin/plugin.json` | Plugin manifest consumed by Claude Code |

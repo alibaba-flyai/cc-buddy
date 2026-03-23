@@ -34,12 +34,11 @@ Use this skill when a change affects plugin behavior, distribution, or the user-
 4. Validate the plugin:
    ```bash
    claude plugins validate .
-   python3 -m py_compile hooks-handlers/session-start.py
+   bash hooks-handlers/session-start.sh | python3 -c "import sys,json; json.load(sys.stdin)"
    ```
 
 5. Test hook output:
    ```bash
-   echo '{"session_id":"dev"}' | python3 hooks-handlers/session-start.py
    bash test.sh
    ```
 

@@ -5,8 +5,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "[ -f \"${CLAUDE_PLUGIN_ROOT}/hooks-handlers/session-start.py\" ] && python3 \"${CLAUDE_PLUGIN_ROOT}/hooks-handlers/session-start.py\" || true",
-            "timeout": 10
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks-handlers/session-start.sh\"",
+            "timeout": 5
           }
         ]
       }

@@ -87,7 +87,7 @@ Main files:
 ```text
 .claude-plugin/plugin.json           plugin manifest
 .claude-plugin/marketplace.json      marketplace manifest
-hooks-handlers/session-start.py      SessionStart hook (injects explanation instructions)
+hooks-handlers/session-start.sh      SessionStart hook (injects explanation instructions)
 hooks/hooks.json                     hook declarations
 ```
 
