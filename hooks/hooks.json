@@ -1,17 +1,15 @@
 {
   "hooks": {
-    "PreToolUse": [
+    "SessionStart": [
       {
-        "matcher": "Bash|Edit|Write|MultiEdit",
         "hooks": [
           {
             "type": "command",
-            "command": "[ -f \"${CLAUDE_PLUGIN_ROOT}/hooks-handlers/pre-tool-use.py\" ] && python3 \"${CLAUDE_PLUGIN_ROOT}/hooks-handlers/pre-tool-use.py\" || true",
-            "timeout": 40
+            "command": "[ -f \"${CLAUDE_PLUGIN_ROOT}/hooks-handlers/session-start.py\" ] && python3 \"${CLAUDE_PLUGIN_ROOT}/hooks-handlers/session-start.py\" || true",
+            "timeout": 10
           }
         ]
       }
-    ],
-    "PermissionRequest": []
+    ]
   }
 }

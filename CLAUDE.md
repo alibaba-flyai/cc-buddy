@@ -9,37 +9,29 @@
 
 ## What this project is
 
-A Claude Code plugin with a `PreToolUse` hook. For both Bash commands and Edit/Write/MultiEdit
-operations, it calls an external LLM and shows a concise explanation inline via `systemMessage`.
-The exemption list lives in `knowledge/classifier.py`; shared LLM config in `knowledge/llm_client.py`.
+A Claude Code plugin with a single `SessionStart` hook. It injects `additionalContext` at session start so Claude explains each Bash, Edit, Write, and MultiEdit operation in its own output before executing it. No external LLM dependency; Claude itself generates the explanations.
 
 ## Critical rules
 
 ### NEVER
-- Hardcode API keys in source files
+- Introduce external LLM calls or API keys; this plugin relies solely on Claude's own output
 - Modify Claude Code plugin installation state manually when plugin commands or `--plugin-dir` can be used
 - Reintroduce curl-based install or uninstall flows, this repo ships through GitHub marketplace only
 
 ### ALWAYS
-- Verify exemption changes with: `python3 -c "from knowledge.classifier import classify_bash; print(classify_bash('YOUR_COMMAND'))"`
-- Keep `_FALLBACK` key obfuscated (base64); never store plaintext keys in code
 - Keep README concise, installation-first, and free of redundant explanation, prefer one primary example over multiple similar examples
-- When plugin behavior or distribution changes in a user-visible way, bump versions in both `.claude-plugin/plugin.json` and `.claude-plugin/marketplace.json`
-- Test hook behavior with a command that actually triggers `PreToolUse`, read-only search and file reads are not sufficient to validate the plugin
-- Current LLM provider is `api.vivgrid.com`, model `gpt-5.4-mini`; ignore legacy `fai-2` keys, do not let old local config silently override
+- When plugin behavior or distribution changes in a user-visible way, bump versions in both `.claude-plugin/plugin.json` and `.claude-plugin/marketplace.json` (current: 2.0.0)
+- Test hook behavior with `bash test.sh`; read-only search and file reads are not sufficient to validate the plugin
+- This plugin uses SessionStart + additionalContext only; do not introduce external LLM calls or API keys
 
 ## Quick commands
 
 ```bash
-# Test a specific command against the classifier
-python3 -c "from knowledge.classifier import classify_bash; print(classify_bash('docker compose up -d'))"
+# Run the SessionStart hook manually
+echo '{"session_id":"dev"}' | python3 hooks-handlers/session-start.py
 
-# Run the hook manually with a test payload
-echo '{"session_id":"dev","tool_name":"Bash","tool_input":{"command":"npm install"}}' \
-  | python3 hooks-handlers/pre-tool-use.py
-
-# Verify no plaintext key in source
-grep -r "viv-ccteacher-" . --include="*.py" --include="*.sh"
+# Run test suite
+bash test.sh
 
 # Validate plugin manifests
 claude plugins validate .
@@ -49,21 +41,17 @@ claude plugins validate .
 
 | Task | Command | Pass condition |
 |---|---|---|
-| Syntax check | `python3 -m py_compile hooks-handlers/pre-tool-use.py knowledge/classifier.py knowledge/llm_client.py` | No output |
-| Classifier change | `python3 -c "from knowledge.classifier import classify_bash, classify_code"` | No import error |
-| Hook change | `echo '{"session_id":"x","tool_name":"Bash","tool_input":{"command":"ls"}}' \| python3 hooks-handlers/pre-tool-use.py; echo $?` | exit 0 |
-| Key not leaked | `grep -r "viv-ccteacher-" . --include="*.py" --include="*.sh"` | No matches |
-| LLM prompt change | `bash test.sh` | 通过: 11  失败: 0 |
+| Syntax check | `python3 -m py_compile hooks-handlers/session-start.py` | No output |
+| SessionStart hook | `echo '{"session_id":"x"}' \| python3 hooks-handlers/session-start.py \| python3 -c "import sys,json; print('ok' if 'additionalContext' in json.load(sys.stdin).get('hookSpecificOutput','') else 'fail')"` | ok |
+| Full test suite | `bash test.sh` | 通过: 10  失败: 0 |
 
 ## File map
 
 | File | Purpose |
 |---|---|
-| `knowledge/classifier.py` | Exemption list only -- add patterns here to silence over-eager LLM explanations |
-| `knowledge/llm_client.py` | Shared LLM config, `get_api_key()`, `detect_language()` |
-| `hooks-handlers/pre-tool-use.py` | PreToolUse hook: Bash and Edit/Write/MultiEdit both call external LLM and show explanation via systemMessage |
-| `hooks/hooks.json` | Hook handler declarations (uses CLAUDE_PLUGIN_ROOT, not relied on for local installs) |
-| `test.sh` | Local test runner -- validates exempted and explained commands without installing the plugin |
+| `hooks-handlers/session-start.py` | SessionStart hook: injects additionalContext so Claude explains operations before executing |
+| `hooks/hooks.json` | Hook handler declarations |
+| `test.sh` | Local test runner |
 | `.claude-plugin/plugin.json` | Plugin manifest consumed by Claude Code |
 | `.claude-plugin/marketplace.json` | Marketplace manifest for GitHub distribution |
 

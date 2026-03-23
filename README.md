@@ -12,7 +12,7 @@
 
 cc-teacher adds lightweight guidance to Claude Code at the moment an operation is about to run. It is meant for cases where the tool call is valid, but the builder may not immediately understand what it does or why it matters.
 
-It runs as a `PreToolUse` hook. For both shell commands and file edits, it calls an LLM and shows a concise explanation inline before the operation runs. Typical cases include Docker, CI workflows, Next.js files, Prisma commands, `.env` files, package installation, and riskier shell commands such as `sudo`, `rm -rf`, or `git push --force`. Trivially obvious operations like `ls`, `cat`, and `git status` are skipped.
+It runs as a `SessionStart` hook that injects a single `additionalContext` instruction at session start. Claude then explains each Bash command, Edit, Write, or MultiEdit operation in its own output before executing it. No external LLM is needed; Claude itself generates the explanations. Trivially obvious commands like `ls`, `cat`, and `git status` are skipped automatically.
 
 ## Installation
 
@@ -25,42 +25,27 @@ Then open a new Claude Code window to activate.
 
 ## Examples
 
-In a fresh Claude Code CLI session, inside a project that does not already have `axios`:
+**Bash**: explain before running a command
 
-```text
-请直接执行 npm install axios
-```
+    > 帮我加一个好用的请求库
 
-`cc-teacher` may show:
+    ☻ 安装 axios，一个基于 Promise 的 HTTP 客户端，用于浏览器和 Node.js 发起网络请求
 
-```text
-☻ 安装 axios，一个基于 Promise 的 HTTP 客户端，用于浏览器和 Node.js 发起网络请求
-  https://axios-http.com
-```
+    $ npm install axios
+
+**Edit**: explain before showing the diff
+
+    > Remove the avatar border radius
+
+    ☻ Remove border radius from avatar, switch to sharp corners to match the design language
+
+    src/components/Avatar.tsx
+    66 -     "borderRadius": 45,
+    66 +     "borderRadius": 0,
 
 ## How It Works
 
-```text
-Claude runs a tool
-       │
-  PreToolUse hook
-  checks exemption list
-       │
-  ┌────┴─────┐
-  │          │
-exempt    needs explanation
-  │          │
-exit 0   ┌──┴──────────┐
-(skip)   │             │
-       Bash         Edit/Write
-         │             │
-      call LLM      call LLM
-         │             │
-    systemMessage  systemMessage
-         │             │
-    exit 0         exit 0
-    (allow)        (allow)
-```
+At session start, a `SessionStart` hook injects an instruction into Claude's context. Claude then outputs a `☻` explanation line before each Bash command or file edit. Trivial commands (`ls`, `cd`, `cat`, `git status`) are skipped.
 
 ## Update
 
@@ -102,9 +87,7 @@ Main files:
 ```text
 .claude-plugin/plugin.json           plugin manifest
 .claude-plugin/marketplace.json      marketplace manifest
-knowledge/classifier.py              exemption list
-knowledge/llm_client.py              shared LLM config and helpers
-hooks-handlers/pre-tool-use.py       PreToolUse hook runtime
+hooks-handlers/session-start.py      SessionStart hook (injects explanation instructions)
 hooks/hooks.json                     hook declarations
 ```
 
@@ -112,11 +95,4 @@ Run the test suite locally without installing the plugin:
 
 ```bash
 bash test.sh
-```
-
-If cc-teacher explains something too obvious, add a pattern to `SIMPLE_BASH_PATTERNS` in `knowledge/classifier.py` and verify it:
-
-```bash
-python3 -c "from knowledge.classifier import classify_bash; print(classify_bash('my-command --flag'))"
-# expect: None
 ```
