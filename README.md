@@ -1,7 +1,7 @@
 <div align="center">
   <img src="https://gw.alipayobjects.com/zos/k/2n/centaur.svg" width="106" alt="cc-buddy" />
   <h1>cc-buddy 😇</h1>
-  <p><em>Make every line of your cc building more fun and enlightening, by commenting codes real-time before Claude Code executes them.</em></p>
+  <p><em>Make every line of your cc building more fun and enlightening, commenting codes real-time before Claude Code executes them.</em></p>
 </div>
 
 <div align="center">
