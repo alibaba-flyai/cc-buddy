@@ -1,6 +1,6 @@
 <div align="center">
   <img src="https://gw.alipayobjects.com/zos/k/2n/centaur.svg" width="106" alt="cc-buddy" />
-  <h1>cc-buddy</h1>
+  <h1>cc-buddy 😇</h1>
   <p><em>Make every line of your cc building more fun and enlightening, by commenting codes real-time before Claude Code executes them.</em></p>
 </div>
 
@@ -10,7 +10,7 @@
 
 ## Overview
 
-cc-buddy adds lightweight guidance to Claude Code (cc) at the moment an operation is about to run. It is meant for cases where the tool call is valid, but the builder may not immediately understand what it does or why it matters.
+cc-buddy 😇 adds lightweight guidance to Claude Code (cc) at the moment an operation is about to run. It is meant for cases where the tool call is valid, but the builder may not immediately understand what it does or why it matters.
 
 It runs as a `SessionStart` hook that injects a single `additionalContext` instruction at session start. Claude then explains each Bash command, Edit, Write, or MultiEdit operation in its own output before executing it. No external LLM is needed; Claude itself generates the explanations. Trivially obvious commands like `ls`, `cat`, and `git status` are skipped automatically.
 
