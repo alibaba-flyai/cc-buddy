@@ -42,7 +42,7 @@ claude plugins validate .
 | Task | Command | Pass condition |
 |---|---|---|
 | SessionStart hook | `bash hooks-handlers/session-start.sh \| python3 -c "import sys,json; print('ok' if 'additionalContext' in json.load(sys.stdin).get('hookSpecificOutput','') else 'fail')"` | ok |
-| Full test suite | `bash test.sh` | 通过: 10  失败: 0 |
+| Full test suite | `bash test.sh` | exit 0 and `失败: 0` |
 
 ## File map
 

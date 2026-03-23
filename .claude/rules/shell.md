@@ -1,7 +1,7 @@
 # Shell Rules
 
 ## Before completing hook changes
-- Test: `bash test.sh` -- expect 通过: 10  失败: 0
+- Test: `bash test.sh` -- expect exit 0 and `失败: 0`
 - Validate JSON output: `bash hooks-handlers/session-start.sh | python3 -c "import sys,json; json.load(sys.stdin)"`
 
 ## Error handling
@@ -10,5 +10,5 @@
 ## Testing a hook change
 ```bash
 bash test.sh
-# expect: 通过: 10  失败: 0
+# expect: exit 0 and 失败: 0
 ```

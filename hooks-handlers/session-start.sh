@@ -2,7 +2,20 @@
 # cc-teacher SessionStart hook.
 # Injects additionalContext so Claude explains operations before executing them.
 
-read -r -d '' ZH << 'ZHEOF'
+json_escape() {
+  local value=$1
+  local quote='"'
+  value=${value//\\/\\\\}
+  value=${value//$quote/\\$quote}
+  value=${value//$'\n'/\\n}
+  value=${value//$'\r'/\\r}
+  value=${value//$'\t'/\\t}
+  printf '%s' "$value"
+}
+
+read -r -d '' ADDITIONAL_CONTEXT <<'EOF' || true
+IMPORTANT: Write the ☻ explanation in the same language as the user's most recent message. If the user writes in English, explain in English. If the user writes in Chinese, explain in Chinese.
+
 你安装了 cc-teacher 插件。在执行任何 Bash、Edit、Write 或 MultiEdit 操作之前，你必须先输出一行简短说明。统一使用以下格式:
 ☻ 你的说明文字
 
@@ -17,9 +30,7 @@ read -r -d '' ZH << 'ZHEOF'
 
 对于显而易见的命令（ls、cd、cat、pwd、git status 等）不需要解释，直接执行。
 不要重复文件名、命令本身或 diff 内容，只说语义。不要跳过这一步。
-ZHEOF
 
-read -r -d '' EN << 'ENEOF'
 You have the cc-teacher plugin installed. Before performing any Bash, Edit, Write, or MultiEdit operation, you must first output a brief one-line explanation. Use this exact format:
 ☻ your explanation here
 
@@ -34,17 +45,13 @@ Examples:
 
 For trivially obvious commands (ls, cd, cat, pwd, git status, etc.) skip the explanation and just run them.
 Do not repeat the filename, command, or diff content, just the semantic intent. Do not skip this step.
-ENEOF
+EOF
 
-# Escape for JSON: replace newlines with \n
-ZH_ESC=$(printf '%s' "$ZH" | awk '{printf "%s\\n", $0}' | sed 's/\\n$//')
-EN_ESC=$(printf '%s' "$EN" | awk '{printf "%s\\n", $0}' | sed 's/\\n$//')
-
-cat << JSONEOF
+cat <<JSONEOF
 {
   "hookSpecificOutput": {
     "hookEventName": "SessionStart",
-    "additionalContext": "IMPORTANT: Write the ☻ explanation in the same language as the user's most recent message. If the user writes in English, explain in English. If the user writes in Chinese, explain in Chinese.\\n\\n${ZH_ESC}\\n\\n${EN_ESC}"
+    "additionalContext": "$(json_escape "$ADDITIONAL_CONTEXT")"
   }
 }
 JSONEOF

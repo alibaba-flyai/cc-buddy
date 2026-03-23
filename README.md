@@ -94,7 +94,7 @@ cd ~/your-other-project
 claude --plugin-dir /path/to/cloned/cc-teacher
 ```
 
-The `--plugin-dir` flag loads the plugin for this session only, without installing it globally. You must use a different project because `settings.local.json` inside cc-teacher disables the plugin to prevent self-explanation loops during development.
+The `--plugin-dir` flag loads the plugin for this session only, without installing it globally. You must use a different project because the checked-in `.claude/settings.json` disables plugins inside cc-teacher to prevent self-explanation loops during development.
 
 Main files:
 
