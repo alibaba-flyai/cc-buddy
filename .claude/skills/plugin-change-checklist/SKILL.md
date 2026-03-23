@@ -43,10 +43,10 @@ Use this skill when a change affects plugin behavior, distribution, or the user-
    ```
 
 6. When users say updates are not visible locally, check in this order:
-   - `/plugin marketplace update flyai`
-   - `/plugin update cc-teacher@flyai`
-   - `/reload-plugins`
-   - if still stale, confirm the manifest version actually changed
+   - `claude plugins marketplace update flyai`
+   - `claude plugins update cc-teacher@flyai`
+   - Reopen Claude Code window
+   - If still stale, confirm the manifest version actually changed
 
 ## Output expectation
 

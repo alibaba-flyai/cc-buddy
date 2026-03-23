@@ -20,7 +20,7 @@ A Claude Code plugin with a single `SessionStart` hook. It injects `additionalCo
 
 ### ALWAYS
 - Keep README concise, installation-first, and free of redundant explanation, prefer one primary example over multiple similar examples
-- When plugin behavior or distribution changes in a user-visible way, bump versions in both `.claude-plugin/plugin.json` and `.claude-plugin/marketplace.json` (current: 2.0.0)
+- When plugin behavior or distribution changes in a user-visible way, bump versions in both `.claude-plugin/plugin.json` and `.claude-plugin/marketplace.json`
 - Test hook behavior with `bash test.sh`; read-only search and file reads are not sufficient to validate the plugin
 - This plugin uses SessionStart + additionalContext only; do not introduce external LLM calls or API keys
 
