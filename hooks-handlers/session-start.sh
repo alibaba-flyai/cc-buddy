@@ -44,7 +44,7 @@ cat << JSONEOF
 {
   "hookSpecificOutput": {
     "hookEventName": "SessionStart",
-    "additionalContext": "${ZH_ESC}\\n\\n${EN_ESC}"
+    "additionalContext": "IMPORTANT: Write the ☻ explanation in the same language as the user's most recent message. If the user writes in English, explain in English. If the user writes in Chinese, explain in Chinese.\\n\\n${ZH_ESC}\\n\\n${EN_ESC}"
   }
 }
 JSONEOF

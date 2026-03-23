@@ -1,6 +1,6 @@
 {
   "name": "cc-teacher",
-  "version": "2.0.1",
+  "version": "2.0.2",
   "description": "Explains unfamiliar operations before Claude Code executes them. Claude generates inline explanations for shell commands and file edits, no external LLM needed.",
   "author": {
     "name": "Alibaba FlyAI"
