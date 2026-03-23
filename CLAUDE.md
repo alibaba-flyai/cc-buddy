@@ -1,6 +1,6 @@
-# CLAUDE.md - cc-teacher
+# CLAUDE.md - cc-buddy
 
-**Purpose:** Rules for AI assistants working on the cc-teacher Claude Code plugin.
+**Purpose:** Rules for AI assistants working on the cc-buddy Claude Code plugin.
 
 ## Language
 
@@ -56,7 +56,7 @@ claude plugins validate .
 
 ## Release notes
 
-- Marketplace name is `flyai`, install target is `cc-teacher@flyai`
+- Marketplace name is `flyai`, install target is `cc-buddy@flyai`
 - User-facing plugin updates require version bumps, otherwise Claude Code may continue using cached plugin content
 - If users report "the old version is still installed", first check marketplace update, plugin update, reload, and current manifest version
-- `settings.local.json` sets `"enabledPlugins": {}` intentionally: disables cc-teacher in this project directory to prevent self-explanation loops during development
+- `settings.local.json` sets `"enabledPlugins": {}` intentionally: disables cc-buddy in this project directory to prevent self-explanation loops during development

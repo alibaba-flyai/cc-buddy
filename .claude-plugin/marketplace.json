@@ -4,11 +4,11 @@
     "name": "Alibaba FlyAI"
   },
   "metadata": {
-    "description": "GitHub marketplace for the cc-teacher Claude Code plugin"
+    "description": "GitHub marketplace for the cc-buddy Claude Code plugin"
   },
   "plugins": [
     {
-      "name": "cc-teacher",
+      "name": "cc-buddy",
       "description": "Explains unfamiliar operations before Claude Code executes them. Claude generates inline explanations for shell commands and file edits, no external LLM needed.",
       "version": "2.0.2",
       "author": {

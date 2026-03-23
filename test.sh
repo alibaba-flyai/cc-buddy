@@ -28,7 +28,7 @@ fi
 echo ""
 echo "=== additionalContext 应该包含关键指令 ==="
 
-for keyword in "☻" "Bash" "Edit" "Write" "MultiEdit"; do
+for keyword in "😇" "Bash" "Edit" "Write" "MultiEdit"; do
   if grep -q "$keyword" <<<"$result"; then
     pass "contains $keyword"
   else
@@ -45,7 +45,7 @@ else
   fail "adaptive language instruction"
 fi
 
-if grep -q "You have the cc-teacher" <<<"$result"; then
+if grep -q "You have the cc-buddy" <<<"$result"; then
   pass "English instruction"
 else
   fail "English instruction"

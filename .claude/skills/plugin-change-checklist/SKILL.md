@@ -1,6 +1,6 @@
 ---
 name: plugin-change-checklist
-description: Finalize a cc-teacher plugin change by updating user-facing docs, versions, validation, and rollout details.
+description: Finalize a cc-buddy plugin change by updating user-facing docs, versions, validation, and rollout details.
 ---
 
 # Plugin Change Checklist
@@ -44,7 +44,7 @@ Use this skill when a change affects plugin behavior, distribution, or the user-
 
 6. When users say updates are not visible locally, check in this order:
    - `claude plugins marketplace update flyai`
-   - `claude plugins update cc-teacher@flyai`
+   - `claude plugins update cc-buddy@flyai`
    - Reopen Claude Code window
    - If still stale, confirm the manifest version actually changed
 
