@@ -45,7 +45,21 @@ Then open a new Claude Code window to activate.
 
 ## How It Works
 
-At session start, a `SessionStart` hook injects an instruction into Claude's context. Claude then outputs a `☻` explanation line before each Bash command or file edit. Trivial commands (`ls`, `cd`, `cat`, `git status`) are skipped.
+```
+┌─────────────┐     ┌──────────────────┐     ┌─────────────────────────┐
+│ Session      │────▶│ session-start.sh │────▶│ additionalContext       │
+│ starts       │     │ hook fires       │     │ injected into Claude    │
+└─────────────┘     └──────────────────┘     └────────────┬────────────┘
+                                                          │
+                                                          ▼
+                                               ┌─────────────────────┐
+                                               │ Before Bash / Edit: │
+                                               │ ☻ explain, then run │
+                                               │                     │
+                                               │ Before ls / cd:     │
+                                               │ skip, run directly  │
+                                               └─────────────────────┘
+```
 
 ## Update
 
