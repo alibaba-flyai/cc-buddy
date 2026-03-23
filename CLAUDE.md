@@ -4,7 +4,7 @@
 
 ## Language
 
-- Respond in Chinese at all times (follows global directive)
+- Respond in the language user most faimilar with, typically same as prompting language.
 - NEVER use em dash (U+2014 —) in any output, code, or documentation. Use commas, colons, or semicolons instead
 
 ## What this project is

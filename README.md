@@ -10,7 +10,7 @@
 
 ## Overview
 
-cc-teacher adds lightweight guidance to Claude Code at the moment an operation is about to run. It is meant for cases where the tool call is valid, but the builder may not immediately understand what it does or why it matters.
+cc-teacher adds lightweight guidance to Claude Code (cc) at the moment an operation is about to run. It is meant for cases where the tool call is valid, but the builder may not immediately understand what it does or why it matters.
 
 It runs as a `SessionStart` hook that injects a single `additionalContext` instruction at session start. Claude then explains each Bash command, Edit, Write, or MultiEdit operation in its own output before executing it. No external LLM is needed; Claude itself generates the explanations. Trivially obvious commands like `ls`, `cat`, and `git status` are skipped automatically.
 
@@ -21,7 +21,7 @@ claude plugins marketplace add alibaba-flyai/cc-teacher
 claude plugins install cc-teacher@flyai
 ```
 
-Then open a new Claude Code window to activate.
+Then open a new cc tab or shell to activate.
 
 ## Examples
 
@@ -68,7 +68,7 @@ claude plugins marketplace update flyai
 claude plugins update cc-teacher@flyai
 ```
 
-Then open a new Claude Code window to apply the update.
+Then open a new cc tab or shell to apply the update.
 
 ## Uninstall
 
@@ -77,7 +77,7 @@ claude plugins uninstall cc-teacher@flyai
 claude plugins marketplace remove flyai
 ```
 
-Then open a new Claude Code window.
+Then open a new cc tab or shell window.
 
 ## Development
 
