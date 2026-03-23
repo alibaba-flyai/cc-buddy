@@ -37,12 +37,12 @@ for keyword in "☻" "Bash" "Edit" "Write" "MultiEdit"; do
 done
 
 echo ""
-echo "=== 中英文指令都包含 ==="
+echo "=== 指令内容检查 ==="
 
-if grep -q "你安装了" <<<"$result"; then
-  pass "Chinese instruction"
+if grep -q "same language as the user" <<<"$result"; then
+  pass "adaptive language instruction"
 else
-  fail "Chinese instruction"
+  fail "adaptive language instruction"
 fi
 
 if grep -q "You have the cc-teacher" <<<"$result"; then

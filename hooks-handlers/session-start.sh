@@ -16,21 +16,6 @@ json_escape() {
 read -r -d '' ADDITIONAL_CONTEXT <<'EOF' || true
 IMPORTANT: Write the ☻ explanation in the same language as the user's most recent message. If the user writes in English, explain in English. If the user writes in Chinese, explain in Chinese.
 
-你安装了 cc-teacher 插件。在执行任何 Bash、Edit、Write 或 MultiEdit 操作之前，你必须先输出一行简短说明。统一使用以下格式:
-☻ 你的说明文字
-
-说明文字要求: 2-3 个短句，用逗号连接，不要句号。
-如果操作涉及某个工具或库，简要说明它的用途。
-如果操作有风险或副作用，提及注意事项。
-
-示例:
-☻ 安装 axios，一个基于 Promise 的 HTTP 客户端，用于浏览器和 Node.js 发起网络请求
-☻ 去除头像圆角，改为直角样式，使视觉风格与整体设计语言保持一致
-☻ 递归删除 dist 目录，清理旧的构建产物，该操作不可恢复
-
-对于显而易见的命令（ls、cd、cat、pwd、git status 等）不需要解释，直接执行。
-不要重复文件名、命令本身或 diff 内容，只说语义。不要跳过这一步。
-
 You have the cc-teacher plugin installed. Before performing any Bash, Edit, Write, or MultiEdit operation, you must first output a brief one-line explanation. Use this exact format:
 ☻ your explanation here
 
