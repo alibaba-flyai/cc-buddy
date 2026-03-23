@@ -27,9 +27,9 @@ Then open a new Claude Code window to activate.
 
 **Bash**: explain before running a command
 
-    > 帮我加一个好用的请求库
+    > 帮我安装 axios
 
-    ☻ 安装 axios，一个基于 Promise 的 HTTP 客户端，用于浏览器和 Node.js 发起网络请求
+    ☻ 安装 axios，一个基于 Promise 的 HTTP 客户端，支持拦截器和自动 JSON 转换
 
     $ npm install axios
 
