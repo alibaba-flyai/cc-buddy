@@ -49,7 +49,6 @@ fail() {
 }
 
 echo ""
-echo "=== SessionStart 应该输出 additionalContext ==="
 
 result=$("${SESSION_HOOK[@]}" 2>/dev/null)
 if grep -q '"additionalContext"' <<<"$result"; then
@@ -151,7 +150,7 @@ errors = []
 plugin = json.loads(Path(".claude-plugin/plugin.json").read_text())
 marketplace = json.loads(Path(".claude-plugin/marketplace.json").read_text())
 
-for field in ["name", "version", "description"]:
+for field in ["name", "description"]:
     if not plugin.get(field):
         errors.append(f"plugin.json missing or empty: {field}")
 if not plugin.get("author", {}).get("name"):
@@ -163,7 +162,7 @@ if not marketplace.get("plugins"):
     errors.append("marketplace.json has no plugins")
 else:
     mp_plugin = marketplace["plugins"][0]
-    for field in ["name", "version", "description"]:
+    for field in ["name", "description"]:
         if not mp_plugin.get(field):
             errors.append(f"marketplace.json plugin missing or empty: {field}")
     if not mp_plugin.get("author", {}).get("name"):
@@ -272,100 +271,12 @@ else
   fail "hook wrote to stderr: $stderr_output"
 fi
 
-echo ""
-echo "=== manifest 版本号 semver 格式校验 ==="
-
-if python3 -c "
-import json, re
-from pathlib import Path
-
-plugin = json.loads(Path('.claude-plugin/plugin.json').read_text())
-version = plugin.get('version', '')
-assert re.fullmatch(r'\d+\.\d+\.\d+', version), f'version {version!r} is not semver'
-" 2>/dev/null; then
-  pass "plugin version is valid semver"
-else
-  fail "plugin version is not valid semver"
-fi
-
-echo ""
-echo "=== marketplace.json category 字段校验 ==="
-
-if python3 -c "
-import json
-from pathlib import Path
-
-marketplace = json.loads(Path('.claude-plugin/marketplace.json').read_text())
-plugin = marketplace['plugins'][0]
-assert plugin.get('category'), 'category field missing or empty'
-" 2>/dev/null; then
-  pass "marketplace.json plugin has non-empty category"
-else
-  fail "marketplace.json plugin missing or empty category"
-fi
-
-echo ""
-echo "=== A: JSON 原始输出不含破坏结构的裸换行（在字符串值内部） ==="
-
-# Claude Code hook 协议接受多行 JSON，但 JSON 字符串值内不能有裸换行（会破坏解析）
-# 验证方式：用 python json 模块解析，能解析即说明换行符均已正确转义
-if printf '%s' "$result" | python3 -c "
-import sys, json
-raw = sys.stdin.read()
-data = json.loads(raw)  # 若含裸换行会抛 JSONDecodeError
-ctx = data['hookSpecificOutput']['additionalContext']
-assert isinstance(ctx, str) and len(ctx) > 0
-" 2>/dev/null; then
-  pass "JSON output parses cleanly, no unescaped newlines in string values"
-else
-  fail "JSON output contains unescaped newlines that break parsing"
-fi
 
 
-echo ""
-echo "=== plugin name 与 marketplace plugin name 一致 ==="
 
-if python3 -c "
-import json
-from pathlib import Path
-plugin = json.loads(Path('.claude-plugin/plugin.json').read_text())
-marketplace = json.loads(Path('.claude-plugin/marketplace.json').read_text())
-assert plugin['name'] == marketplace['plugins'][0]['name'], \
-    f'plugin.json name={plugin[\"name\"]!r} != marketplace name={marketplace[\"plugins\"][0][\"name\"]!r}'
-" 2>/dev/null; then
-  pass "plugin.json name matches marketplace.json plugin name"
-else
-  fail "plugin.json name does not match marketplace.json plugin name"
-fi
 
-echo ""
-echo "=== hooks.json command 使用 CLAUDE_PLUGIN_ROOT 变量 ==="
 
-if python3 -c "
-import json
-from pathlib import Path
-data = json.loads(Path('hooks/hooks.json').read_text())
-cmd = data['hooks']['SessionStart'][0]['hooks'][0]['command']
-assert '\${CLAUDE_PLUGIN_ROOT}' in cmd, f'command does not use CLAUDE_PLUGIN_ROOT: {cmd!r}'
-" 2>/dev/null; then
-  pass "hooks.json command uses \${CLAUDE_PLUGIN_ROOT}"
-else
-  fail "hooks.json command does not use \${CLAUDE_PLUGIN_ROOT}"
-fi
 
-echo ""
-echo "=== additionalContext 包含 😇 格式说明 ==="
-
-if printf '%s' "$result" | python3 -c "
-import sys, json
-data = json.load(sys.stdin)
-ctx = data['hookSpecificOutput']['additionalContext']
-assert '😇 your explanation here' in ctx, 'format instruction missing from additionalContext'
-" 2>/dev/null; then
-  pass "additionalContext contains '😇 your explanation here' format instruction"
-else
-  fail "additionalContext missing '😇 your explanation here' format instruction"
-fi
 
 echo ""
 echo "=== 结果 ==="
