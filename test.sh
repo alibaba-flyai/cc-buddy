@@ -106,39 +106,6 @@ else
 fi
 
 echo ""
-echo "=== JSON 转义边界测试 ==="
-
-# 所有转义验证均通过真实运行 session-start.sh 的输出来验证，不复制其内部逻辑
-
-# 验证 hook 输出的 JSON 可被解析（隐含验证了双引号、反斜杠、换行符等均已正确转义）
-if python3 -c "
-import subprocess, json
-result = subprocess.run(['bash', 'hooks-handlers/session-start.sh'], capture_output=True, text=True)
-data = json.loads(result.stdout)
-ctx = data['hookSpecificOutput']['additionalContext']
-assert isinstance(ctx, str) and len(ctx) > 0
-" 2>/dev/null; then
-  pass "json_escape: hook output is valid JSON (all special chars escaped)"
-else
-  fail "json_escape: hook output is not valid JSON"
-fi
-
-# 验证 additionalContext 字符串值中包含双引号内容（prompt 里有 \"😇 your explanation here\"）
-# 若双引号转义有问题，JSON 解析会失败，上面已覆盖；这里额外验证解析后内容完整性
-if python3 -c "
-import subprocess, json
-result = subprocess.run(['bash', 'hooks-handlers/session-start.sh'], capture_output=True, text=True)
-data = json.loads(result.stdout)
-ctx = data['hookSpecificOutput']['additionalContext']
-# prompt 中含有换行符（段落分隔），验证解析后换行符被正确还原为 Python 字符串中的 \n
-assert '\n' in ctx, 'expected newlines in additionalContext after JSON decode'
-" 2>/dev/null; then
-  pass "json_escape: newlines correctly round-tripped through JSON encode/decode"
-else
-  fail "json_escape: newlines not correctly handled"
-fi
-
-echo ""
 echo "=== Manifest 字段完整性校验 ==="
 
 python3 - > /tmp/cc_buddy_manifest_check.txt 2>&1 <<'PYEOF'
@@ -179,7 +146,8 @@ if [ $manifest_exit -eq 0 ]; then
   pass "plugin.json required fields"
   pass "marketplace.json required fields"
 else
-  fail "manifest required fields check ($(cat /tmp/cc_buddy_manifest_check.txt))"
+  fail "plugin.json required fields"
+  fail "marketplace.json required fields ($(cat /tmp/cc_buddy_manifest_check.txt))"
 fi
 rm -f /tmp/cc_buddy_manifest_check.txt
 
@@ -203,10 +171,9 @@ fi
 echo ""
 echo "=== JSON 结构层级校验 ==="
 
-if python3 -c "
-import subprocess, json, sys
-result = subprocess.run(['bash', 'hooks-handlers/session-start.sh'], capture_output=True, text=True)
-data = json.loads(result.stdout)
+if printf '%s' "$result" | python3 -c "
+import sys, json
+data = json.load(sys.stdin)
 out = data['hookSpecificOutput']
 assert out.get('hookEventName') == 'SessionStart', f'hookEventName is {out.get(\"hookEventName\")!r}'
 assert 'additionalContext' in out, 'additionalContext key missing'
@@ -329,10 +296,9 @@ echo "=== additionalContext 字符串值内换行符已正确转义 ==="
 
 # 在 JSON 原始文本中，字符串值内的换行必须表示为 \n（两个字符），不能是裸 0x0A
 # 提取 additionalContext 的原始 JSON 字符串部分，检查其中不含裸 0x0A
-if python3 -c "
-import subprocess, json
-result = subprocess.run(['bash', 'hooks-handlers/session-start.sh'], capture_output=True, text=True)
-raw = result.stdout
+if printf '%s' "$result" | python3 -c "
+import sys, json
+raw = sys.stdin.read()
 # 找到 additionalContext 的值在原始 JSON 文本中的位置，验证其中无裸换行
 # 方法：将原始输出中 additionalContext 的 JSON 字符串值提取出来检查
 data = json.loads(raw)
@@ -383,10 +349,9 @@ fi
 echo ""
 echo "=== additionalContext 包含 😇 格式说明 ==="
 
-if python3 -c "
-import subprocess, json
-result = subprocess.run(['bash', 'hooks-handlers/session-start.sh'], capture_output=True, text=True)
-data = json.loads(result.stdout)
+if printf '%s' "$result" | python3 -c "
+import sys, json
+data = json.load(sys.stdin)
 ctx = data['hookSpecificOutput']['additionalContext']
 assert '😇 your explanation here' in ctx, 'format instruction missing from additionalContext'
 " 2>/dev/null; then

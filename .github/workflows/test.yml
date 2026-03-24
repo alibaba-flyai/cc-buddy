@@ -24,12 +24,13 @@ jobs:
           python-version: '3.x'
       
       - name: Run test suite
+        id: test
         run: bash test.sh
       
       - name: Report test results
         if: always()
         run: |
-          if [ $? -eq 0 ]; then
+          if [ "${{ steps.test.outcome }}" = "success" ]; then
             echo "✅ All tests passed"
           else
             echo "❌ Tests failed"
