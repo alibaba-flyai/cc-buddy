@@ -185,7 +185,7 @@ fi
 rm -f /tmp/cc_buddy_manifest_check.txt
 
 echo ""
-echo "=== additionalContext 长度检查 ==="
+echo "=== additionalContext 长度校验 ==="
 
 context_len=$(printf '%s' "$result" | python3 -c "
 import sys, json
@@ -194,44 +194,40 @@ ctx = data.get('hookSpecificOutput', {}).get('additionalContext', '')
 print(len(ctx))
 " 2>/dev/null)
 
-# additionalContext 不应超过 2000 字符，避免 token 浪费
-if [ -n "$context_len" ] && [ "$context_len" -le 2000 ]; then
-  pass "additionalContext length <= 2000 chars (got: $context_len)"
+# additionalContext 应该非空且不超过 2000 字符
+if [ -n "$context_len" ] && [ "$context_len" -gt 0 ] && [ "$context_len" -le 2000 ]; then
+  pass "additionalContext length is valid: 0 < $context_len <= 2000"
 else
-  fail "additionalContext too long or unreadable (got: $context_len)"
+  fail "additionalContext length invalid (got: $context_len, expected: 0 < length <= 2000)"
 fi
 
 echo ""
 echo "=== JSON 结构层级校验 ==="
 
+# 检查 hookEventName
 if printf '%s' "$result" | python3 -c "
 import sys, json
 data = json.load(sys.stdin)
 out = data['hookSpecificOutput']
-assert out.get('hookEventName') == 'SessionStart', f'hookEventName is {out.get(\"hookEventName\")!r}'
-assert 'additionalContext' in out, 'additionalContext key missing'
+assert out.get('hookEventName') == 'SessionStart'
 " 2>/dev/null; then
   pass "hookSpecificOutput.hookEventName == SessionStart"
-  pass "hookSpecificOutput.additionalContext key present"
 else
-  fail "JSON structure: hookEventName or additionalContext missing/wrong"
+  fail "hookSpecificOutput.hookEventName missing or not 'SessionStart'"
 fi
 
-echo ""
-echo "=== additionalContext 非空校验 ==="
-
-context_nonempty=$(printf '%s' "$result" | python3 -c "
+# 检查 additionalContext key
+if printf '%s' "$result" | python3 -c "
 import sys, json
 data = json.load(sys.stdin)
-ctx = data.get('hookSpecificOutput', {}).get('additionalContext', '')
-print(len(ctx))
-" 2>/dev/null)
-
-if [ -n "$context_nonempty" ] && [ "$context_nonempty" -gt 0 ]; then
-  pass "additionalContext is non-empty (got: $context_nonempty chars)"
+out = data['hookSpecificOutput']
+assert 'additionalContext' in out
+" 2>/dev/null; then
+  pass "hookSpecificOutput.additionalContext key present"
 else
-  fail "additionalContext is empty or unreadable"
+  fail "hookSpecificOutput.additionalContext key missing"
 fi
+
 
 echo ""
 echo "=== 跳过规则关键词检查 ==="
@@ -324,29 +320,6 @@ else
   fail "JSON output contains unescaped newlines that break parsing"
 fi
 
-echo ""
-echo "=== additionalContext 字符串值内换行符已正确转义 ==="
-
-# 在 JSON 原始文本中，字符串值内的换行必须表示为 \n（两个字符），不能是裸 0x0A
-# 提取 additionalContext 的原始 JSON 字符串部分，检查其中不含裸 0x0A
-if printf '%s' "$result" | python3 -c "
-import sys, json
-raw = sys.stdin.read()
-# 找到 additionalContext 的值在原始 JSON 文本中的位置，验证其中无裸换行
-# 方法：将原始输出中 additionalContext 的 JSON 字符串值提取出来检查
-data = json.loads(raw)
-ctx_value = data['hookSpecificOutput']['additionalContext']
-# json.dumps 会把 Python 字符串里的 \n 转义为 \\n
-# 反过来：如果原始 JSON 里有裸换行，json.loads 会失败（上面已验证）
-# 这里额外验证：重新序列化后能还原，证明转义是双向一致的
-re_encoded = json.dumps(ctx_value)
-re_decoded = json.loads(re_encoded)
-assert re_decoded == ctx_value, 'round-trip encode/decode mismatch'
-" 2>/dev/null; then
-  pass "additionalContext newlines are properly escaped (round-trip verified)"
-else
-  fail "additionalContext escape round-trip failed"
-fi
 
 echo ""
 echo "=== plugin name 与 marketplace plugin name 一致 ==="
