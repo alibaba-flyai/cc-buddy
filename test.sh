@@ -141,7 +141,8 @@ fi
 echo ""
 echo "=== Manifest 字段完整性校验 ==="
 
-python3 - > /tmp/cc_buddy_manifest_check.txt 2>&1 <<'PYEOF'
+manifest_check_file=$(mktemp)
+python3 - > "$manifest_check_file" 2>&1 <<'PYEOF'
 import json, sys
 from pathlib import Path
 
@@ -180,9 +181,9 @@ if [ $manifest_exit -eq 0 ]; then
   pass "marketplace.json required fields"
 else
   fail "plugin.json required fields"
-  fail "marketplace.json required fields ($(cat /tmp/cc_buddy_manifest_check.txt))"
+  fail "marketplace.json required fields ($(cat "$manifest_check_file"))"
 fi
-rm -f /tmp/cc_buddy_manifest_check.txt
+rm -f "$manifest_check_file"
 
 echo ""
 echo "=== additionalContext 长度校验 ==="
