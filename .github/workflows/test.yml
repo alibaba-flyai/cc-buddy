@@ -23,9 +23,18 @@ jobs:
         with:
           python-version: '3.x'
       
+      - name: Verify test script exists
+        run: |
+          if [ ! -f "test.sh" ]; then
+            echo "::error::test.sh not found"
+            exit 1
+          fi
+      
       - name: Run test suite
         id: test
-        run: bash test.sh
+        run: |
+          chmod +x test.sh
+          ./test.sh
       
       - name: Report test results
         if: always()

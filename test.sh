@@ -1,6 +1,34 @@
 #!/usr/bin/env bash
 # 本地调试脚本 -- 不需要安装插件，直接跑
 
+# 前置检查：确保关键文件存在（这个阶段使用严格模式）
+check_prerequisites() {
+  local missing_files=()
+  local required_files=(
+    "hooks-handlers/session-start.sh"
+    "hooks/hooks.json"
+    ".claude-plugin/plugin.json"
+    ".claude-plugin/marketplace.json"
+  )
+  
+  for file in "${required_files[@]}"; do
+    if [ ! -f "$file" ]; then
+      missing_files+=("$file")
+    fi
+  done
+  
+  if [ ${#missing_files[@]} -gt 0 ]; then
+    echo "::error::Required files missing:"
+    for file in "${missing_files[@]}"; do
+      echo "::error::  - $file"
+    done
+    exit 1
+  fi
+}
+
+# 执行前置检查
+check_prerequisites
+
 SESSION_HOOK=(bash hooks-handlers/session-start.sh)
 PASS=0
 FAIL=0
@@ -11,7 +39,12 @@ pass() {
 }
 
 fail() {
-  echo "  FAIL  $1"
+  # GitHub Actions 特殊指令：在 UI 中以红色标注错误
+  if [ -n "$GITHUB_ACTIONS" ]; then
+    echo "::error::FAIL: $1"
+  else
+    echo "  FAIL  $1"
+  fi
   FAIL=$((FAIL + 1))
 }
 
